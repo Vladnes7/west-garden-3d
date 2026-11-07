@@ -212,7 +212,7 @@ function buildWindows(B) {
     F.box(0.02, y1 - y0, 0.33, w.a * S + 0.01, y0, -0.165, 'wood');
     F.box(0.02, y1 - y0, 0.33, w.b * S - 0.01, y0, -0.165, 'wood');
     F.box(L, 0.02, 0.33, cx, y1 - 0.02, -0.165, 'wood');
-    F.box((w.b - w.a) * S + 0.04, 0.03, 0.37, cx, y0 - 0.03, -0.165, 'wood');
+    F.box((w.b - w.a) * S + 0.04, 0.03, 0.37, cx, y0 - 0.026, -0.165, 'wood'); // 4 mm proud of the plaster reveal (no z-fight)
     // frame: perimeter + two mullions (three sashes), slim profiles
     const fw = 0.06;
     F.box(L, fw, 0.07, cx, y0, fz, 'win_frame'); F.box(L, fw, 0.07, cx, y1 - fw, fz, 'win_frame');
@@ -296,8 +296,15 @@ function buildDoors(root) {
       // invisible aluminium frame: just a dark 3 mm reveal line
       const W = (o.b - o.a - 12) * S, H = (o.top - 14) * S;
       const [x1, z1] = P(o.a + 2, 0), [x2, z2] = P(o.b - 2, 0), [xm, zm] = P((o.a + o.b) / 2, 0), d = (o.w1 - o.w0 + 2) * S;
-      if (o.axis === 'y') { F.box(0.004, o.top * S, d, x1, 0, z1, 'shadowgap'); F.box(0.004, o.top * S, d, x2, 0, z2, 'shadowgap'); F.box((o.b - o.a) * S, 0.004, d, xm, o.top * S - 0.004, zm, 'shadowgap'); }
-      else { F.box(d, o.top * S, 0.004, x1, 0, z1, 'shadowgap'); F.box(d, o.top * S, 0.004, x2, 0, z2, 'shadowgap'); F.box(d, 0.004, (o.b - o.a) * S, xm, o.top * S - 0.004, zm, 'shadowgap'); }
+      // jamb lining in the wall finish; a 3 mm dark reveal only on the two faces
+      const dd = d - 0.024, fo = (d - 0.006) / 2;
+      if (o.axis === 'y') {
+        F.box(0.004, o.top * S, dd, x1, 0, z1, 'door_hall'); F.box(0.004, o.top * S, dd, x2, 0, z2, 'door_hall'); F.box((o.b - o.a) * S, 0.004, dd, xm, o.top * S - 0.004, zm, 'door_hall');
+        for (const s of [-1, 1]) { F.box(0.004, o.top * S, 0.006, x1, 0, z1 + s * fo, 'shadowgap'); F.box(0.004, o.top * S, 0.006, x2, 0, z2 + s * fo, 'shadowgap'); F.box((o.b - o.a) * S, 0.004, 0.006, xm, o.top * S - 0.004, zm + s * fo, 'shadowgap'); }
+      } else {
+        F.box(dd, o.top * S, 0.004, x1, 0, z1, 'door_hall'); F.box(dd, o.top * S, 0.004, x2, 0, z2, 'door_hall'); F.box(dd, 0.004, (o.b - o.a) * S, xm, o.top * S - 0.004, zm, 'door_hall');
+        for (const s of [-1, 1]) { F.box(0.006, o.top * S, 0.004, x1 + s * fo, 0, z1, 'shadowgap'); F.box(0.006, o.top * S, 0.004, x2 + s * fo, 0, z2, 'shadowgap'); F.box(0.006, 0.004, (o.b - o.a) * S, xm + s * fo, o.top * S - 0.004, zm, 'shadowgap'); }
+      }
       B.build(root, { name: o.id + '-frame' });
       // leaf flush with the face that it opens toward
       const off = (o.swing > 0 ? 1 : -1) * ((o.w1 - o.w0) / 2 - 22);

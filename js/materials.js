@@ -107,6 +107,10 @@ export async function buildMaterials(renderer, progress) {
     glass_display: std({ color: '#cfd3d2', roughness: 0.05, transparent: true, opacity: 0.2, depthWrite: false }),
     glass_smoke: std({ color: '#6d6a66', roughness: 0.05, transparent: true, opacity: 0.35, depthWrite: false }),
     mirror: std({ color: '#cfd5d8', metalness: 1, roughness: 0.02 }),
+    // per-room mirrors: each gets its own baked cube reflection (see main.js bakeMirrors)
+    mirror_bed: std({ color: '#d6dadc', metalness: 1, roughness: 0.0 }),
+    mirror_hall: std({ color: '#d6dadc', metalness: 1, roughness: 0.0 }),
+    mirror_bath: std({ color: '#d6dadc', metalness: 1, roughness: 0.0 }),
     win_frame: std({ color: '#2b2b2c', roughness: 0.5, metalness: 0.3 }),
     blind: fabricM('linen', '#e9e2d6', 1),
     outside: new THREE.MeshBasicMaterial({ map: TEX.city, side: THREE.BackSide, fog: false }),
@@ -235,4 +239,5 @@ export function applyOption(ctrl, idx) {
     m.roughness = o.roughness !== undefined ? o.roughness : m.userData.r0;
     if (m.metalness !== undefined) m.metalness = o.metalness !== undefined ? o.metalness : m.userData.m0;
   }
+  if (typeof window !== 'undefined' && window.__bakeMirrors) window.__bakeMirrors(); // mirrors pick up the new finish
 }

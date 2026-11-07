@@ -2,7 +2,7 @@
 // hollow carcasses, and procedural contents (clothes, food, dishes, toiletries).
 // Frame convention as in pieces.js: origin bottom-centre of the front plane, front toward +z, depth into -z.
 import * as THREE from 'three';
-import { Batch, Frame } from './geom.js';
+import { Batch, Frame, mat4 } from './geom.js';
 import { shakerDoor, archPanelDoor, collide } from './pieces.js';
 
 export const MOVERS = [];   // { kind: 'hinge'|'drawer', inner, meshes, inside, open, target, max, sign }
@@ -108,17 +108,37 @@ export function fillSection(F, x0, x1, y0, y1, z, depth, kind, pal, seed = 0) {
 }
 
 // ------------------------------------------------------------ contents
+// Garment silhouette (shirt / coat / dress) in the XY plane, top centre at the origin, hanging down to -len.
+const GARMENT = new Map();
+function garmentShape(kind, len) {
+  const key = kind + ':' + len.toFixed(2);
+  if (GARMENT.has(key)) return GARMENT.get(key);
+  const sh = new THREE.Shape(), hw = kind === 'coat' ? 0.215 : 0.2, sl = kind === 'dress' ? 0 : 1;
+  const half = [[0.055, 0], [hw - 0.03, -0.035]];
+  if (sl) half.push([hw + 0.012, -0.075], [hw + 0.03, -len * 0.62], [hw - 0.01, -len * 0.64], [hw - 0.02, -0.2]);
+  else half.push([hw - 0.035, -0.12], [hw - 0.06, -0.3]);
+  half.push(kind === 'dress' ? [hw + 0.04, -len] : [hw - 0.02, -len]);
+  const pts = [...half.map(([x, y]) => [x, y]), ...half.slice().reverse().map(([x, y]) => [-x, y])];
+  sh.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
+  sh.quadraticCurveTo(0, 0.03, pts[0][0], pts[0][1]);
+  GARMENT.set(key, sh);
+  return sh;
+}
+// Clothes on a rod along local x (x0..x1) at height y, centred at depth z. Garments hang in the y-z plane.
 export function hanging(F, x0, x1, y, z, mats, seed = 1, { long = 1.0, v = 0.4 } = {}) {
   F.cylX(0.011, x1 - x0, (x0 + x1) / 2, y, z, 'chrome', 12);
   let x = x0 + 0.06, k = 0;
   while (x < x1 - 0.05) {
-    const r = rnd(seed * 7.3 + k), len = long - r * v, m = pick(mats, seed * 3.1 + k * 1.7);
-    const s = F.sub(x, 0, z, (rnd(k + seed * 2.2) - 0.5) * 0.14);
-    s.torus(0.016, 0.003, 0, y + 0.004, 0, 'chrome', 0, Math.PI * 1.3, HP);
-    s.box(0.012, 0.014, 0.4, 0, y - 0.07, 0, 'oak_light');
-    s.rbox(0.032, 0.07, 0.42, 0.028, 0, y - 0.13, 0, m, 0, 2);
-    s.rbox(0.026, len, 0.38, 0.012, 0, y - 0.1 - len, 0, m, 0, 2);
-    x += 0.05 + rnd(k * 3.7 + seed) * 0.035; k++;
+    const r = rnd(seed * 7.3 + k), len = Math.round((long - r * v) * 20) / 20, m = pick(mats, seed * 3.1 + k * 1.7);
+    const kind = len >= 0.95 ? (rnd(seed + k * 5.1) < 0.5 ? 'coat' : 'dress') : 'shirt';
+    const t = kind === 'coat' ? 0.03 : 0.016;
+    const s = F.sub(x, 0, z, (rnd(k + seed * 2.2) - 0.5) * 0.1);
+    s.torus(0.016, 0.0028, 0, y + 0.004, 0, 'chrome', 0, Math.PI * 1.3, HP);
+    s.cyl(0.003, 0.003, 0.05, 0, y - 0.045, 0, 'chrome', 6);
+    for (const sg of [-1, 1]) s.sub(0, y - 0.065, sg * 0.1, 0, sg * 0.32).box(0.012, 0.016, 0.215, 0, -0.008, 0, 'oak_light');
+    s.extrude(garmentShape(kind, len), t, m, mat4(-t / 2, y - 0.075, 0, HP), 0.012);
+    x += (kind === 'coat' ? 0.075 : 0.055) + rnd(k * 3.7 + seed) * 0.03; k++;
   }
 }
 export function folded(F, x, y, z, n, mats, seed = 0, w = 0.3, d = 0.28) {
@@ -190,7 +210,7 @@ export function drawerFill(F, w, h, d, kind, seed = 0) {
     }
   } else if (kind === 'pots') {
     const n = Math.max(1, Math.floor(w / 0.26));
-    for (let i = 0; i < n; i++) { const x = -w / 2 + (w / n) * (i + 0.5); pot(F, x, 0, -d * 0.22, Math.min(0.11, w / n / 2 - 0.02), Math.min(h - 0.03, 0.14), true); pan(F, x, 0, d * 0.25, Math.min(0.1, w / n / 2 - 0.02), 0); }
+    for (let i = 0; i < n; i++) { const x = -w / 2 + (w / n) * (i + 0.5); const r = Math.min(0.11, w / n / 2 - 0.02); pot(F, x, 0, -d * 0.22, r, Math.min(h - 0.03, 0.14), true); pot(F, x, 0, d * 0.24, r * 0.82, Math.min(h - 0.03, 0.09), false); } // no pan handles poking through the front
   } else if (kind === 'utensils') {
     F.box(w, 0.04, d * 0.8, 0, 0, 0, 'oak_light');
     for (let i = 0; i < 6; i++) { const x = -w / 2 + 0.05 + i * (w - 0.1) / 5; F.box(0.03, 0.012, 0.3, x, 0.045, -0.02, pick(['oak_dark', 'black', 'steel'], seed + i)); F.box(0.06, 0.008, 0.07, x, 0.045, 0.16, pick(['oak_dark', 'black', 'steel'], seed + i)); }
@@ -209,7 +229,11 @@ export function drawerFill(F, w, h, d, kind, seed = 0) {
   } else if (kind === 'frozen') {
     for (let x = -w / 2 + 0.1, i = 0; x < w / 2 - 0.09; x += 0.17, i++) for (const z of [-d * 0.22, d * 0.22]) F.rbox(0.15, Math.min(h - 0.03, 0.06 + rnd(i + z) * 0.08), 0.2, 0.02, x, 0, z, pick(['frost1', 'frost2', 'pack4', 'carton'], i * 3 + z * 5), 0, 2);
   } else if (kind === 'makeup') {
-    for (let x = -w / 2 + 0.05, i = 0; x < w / 2 - 0.04; x += 0.07, i++) { F.cyl(0.012, 0.012, 0.09, x, 0, -0.05, pick(['gilt', 'black', 'glass_pink'], i), 10); F.rbox(0.05, 0.015, 0.05, 0.006, x, 0, 0.06, pick(['mug_sand', 'glass_pink', 'gilt'], i + 2), 0, 2); }
+    // lipsticks / pencils lying flat, compacts and a small palette — everything stays below the drawer rim
+    for (let x = -w / 2 + 0.05, i = 0; x < w / 2 - 0.04; x += 0.07, i++) {
+      F.sub(x, 0.012, -0.05, (rnd(seed + i) - 0.5) * 0.3).cylZ(0.011, 0.085, 0, 0, 0, pick(['gilt', 'black', 'glass_pink'], i), 10);
+      F.rbox(0.05, Math.min(0.015, h - 0.01), 0.05, 0.006, x, 0, 0.06, pick(['mug_sand', 'glass_pink', 'gilt'], i + 2), 0, 2);
+    }
   }
 }
 

@@ -106,13 +106,14 @@ function tvWall(W) {
   const u0 = 0.33, u1 = 4.41, d = 0.4, top = CEIL - 0.1; // stops under the cornice line
   const nich0 = 0.1, nich1 = 0.5;   // lit recessed base niche
   // carcass skin & niche
-  T.box(u1 - u0, nich0, 0.36, (u0 + u1) / 2, 0, -0.2, 'shadowgap');
-  T.box(u1 - u0, nich1 - nich0, 0.02, (u0 + u1) / 2, nich0, -0.21, 'lacquer_sage');
-  T.box(u1 - u0, 0.02, 0.2, (u0 + u1) / 2, nich0, -0.1, 'lacquer_sage');
-  T.box(u1 - u0 - 0.02, 0.008, 0.012, (u0 + u1) / 2, nich1 - 0.012, -0.02, 'led');
+  const ni = u1 - u0 - 0.04; // niche parts stop inside the 20 mm end panels (no coplanar faces)
+  T.box(ni, nich0, 0.36, (u0 + u1) / 2, 0, -0.2, 'shadowgap');
+  T.box(ni, nich1 - nich0, 0.02, (u0 + u1) / 2, nich0, -0.21, 'lacquer_sage');
+  T.box(ni, 0.02, 0.2, (u0 + u1) / 2, nich0, -0.1, 'lacquer_sage');
+  T.box(ni - 0.01, 0.008, 0.012, (u0 + u1) / 2, nich1 - 0.012, -0.02, 'led');
   P.light(T, 1.9, 0.45, 0.1, 'led', 'living', 0.12);
   T.box(0.02, top, d, u0 + 0.01, 0, -d / 2, 'wood'); T.box(0.02, top, d, u1 - 0.01, 0, -d / 2, 'wood');
-  T.box(u1 - u0, 0.02, d, (u0 + u1) / 2, top - 0.02, -d / 2, 'wood');
+  T.box(u1 - u0 - 0.04, 0.02, d, (u0 + u1) / 2, top - 0.02, -d / 2, 'wood');
   const board = (a, b, y0, y1, hinge, fill) => {
     const w = b - a, c = (a + b) / 2;
     CW.carcass(T.sub(c, y0, -0.02), w, y1 - y0, d - 0.02, 'wood', { shelves: (y1 - y0) > 1 ? [0.45, 0.9, 1.35, 1.8].filter((y) => y < y1 - y0 - 0.1) : [] });
@@ -343,7 +344,7 @@ function hall(B, W) {
   W.box(0.02, top, 0.905, 3.1, 0, 7.1875, 'wood_fluted');
   // ИМ-2 floating console with drawer + mirror ЗЕРК.1 (2580×860) on the bathroom wall (x = 4.255)
   const C = W.sub(4.255, 0, 7.07, -HP);
-  C.box(0.86, 2.58, 0.012, 0, 0.1, 0.006, 'mirror');
+  C.box(0.86, 2.58, 0.012, 0, 0.1, 0.006, 'mirror_hall');
   C.box(0.675, 0.02, 0.2, 0, 0.88, 0.1, 'wood');
   CW.carcass(C.sub(0, 0.73, 0.2), 0.675, 0.15, 0.2, 'wood', { top: false });
   CW.drawer(C.sub(0, 0.735, 0.2), 0.67, 0.14, 0.17, (L) => flat(L, 0.67, 0.14, 'wood'), (f, iw, ih, id) => CW.drawerFill(f, iw, ih, id, 'makeup', 2), { boxH: 0.09 });
@@ -364,24 +365,26 @@ function bedroom(B, W) {
   E.box(0.65, ph, 0.03, 0.95 + 0.325, 0, 0.015, 'wood');
   E.box(0.012, ph, 0.008, 1.64, 0, 0.004, 'shadowgap');
   E.box(0.43, ph, 0.03, 1.68 + 0.215, 0, 0.015, 'wood');
-  E.box(0.19, ph, 0.006, 2.205, 0, 0.003, 'mirror');
+  E.box(0.19, ph, 0.006, 2.205, 0, 0.003, 'mirror_bed');
   E.box(0.43, ph, 0.03, 2.30 + 0.215, 0, 0.015, 'wood');
   E.box(0.72, ph, 0.04, 2.73 + 0.36, 0, 0.02, 'wood_slat');
   E.box(0.012, ph, 0.008, 3.49, 0, 0.004, 'shadowgap');
-  E.box(0.754, ph, 0.006, 3.53 + 0.377, 0, 0.003, 'mirror');
+  E.box(0.754, ph, 0.006, 3.53 + 0.377, 0, 0.003, 'mirror_bed');
   // floating nightstands (wood shelves with a drawer) ИМ-13 / ИМ-11
-  for (const [u0, u1] of [[0.97, 1.36], [3.15, 4.2]]) {
-    const w = u1 - u0, c = (u0 + u1) / 2;
-    E.box(w, 0.12, 0.4, c, 0.25, 0.22, 'wood_dark');
-    CW.drawer(E.sub(c, 0.255, 0.42), w - 0.04, 0.11, 0.36, (L) => flat(L, w - 0.04, 0.11, 'wood_dark'), (f, iw, ih, id) => CW.drawerFill(f, iw, ih, id, 'makeup', 5), { boxH: 0.07 });
+  for (const [u0, u1, seed] of [[0.97, 1.71, 5], [3.6, 4.27, 6]]) {
+    const w = u1 - u0, c = (u0 + u1) / 2, dw = Math.min(0.5, w - 0.06);
+    CW.carcass(E.sub(c, 0.25, 0.4), w, 0.12, 0.37, 'wood_dark', { t: 0.02 });
+    E.box(w, 0.02, 0.4, c, 0.35, 0.2, 'wood_dark'); // top board runs flush over the drawer front
+    E.box(w - dw - 0.004, 0.08, 0.02, c + dw / 2 + 0.002, 0.27, 0.39, 'wood_dark'); // fixed panel beside the drawer
+    CW.drawer(E.sub(c - (w - dw) / 2, 0.272, 0.38), dw, 0.076, 0.33, (L) => flat(L, dw, 0.076, 'wood_dark', 0.02), (f, iw, ih, id) => CW.drawerFill(f, iw, ih, id, seed === 5 ? 'makeup' : 'socks', seed), { boxH: 0.055 });
   }
   // Simeon marble table lamp on the right nightstand
-  E.lathe([[0, 0], [0.06, 0], [0.06, 0.02], [0.02, 0.05], [0.02, 0.26], [0, 0.26]], 3.85, 0.37, 0.2, 'stone_light', 24);
-  E.lathe([[0, 0.18], [0.08, 0.2], [0.11, 0.26], [0.1, 0.3], [0.04, 0.33], [0, 0.335]], 3.85, 0.37, 0.2, 'ceramic_lamp', 28);
-  E.lathe([[0, 0], [0.05, 0], [0.05, 0.02], [0.02, 0.04], [0.02, 0.18], [0, 0.18]], 4.0, 0.37, 0.25, 'stone_light', 20);
-  P.light(E, 3.85, 0.62, 0.25, 'lamp', 'bed', 0.3);
+  E.lathe([[0, 0], [0.06, 0], [0.06, 0.02], [0.02, 0.05], [0.02, 0.26], [0, 0.26]], 3.98, 0.37, 0.2, 'stone_light', 24);
+  E.lathe([[0, 0.18], [0.08, 0.2], [0.11, 0.26], [0.1, 0.3], [0.04, 0.33], [0, 0.335]], 3.98, 0.37, 0.2, 'ceramic_lamp', 28);
+  E.lathe([[0, 0], [0.05, 0], [0.05, 0.02], [0.02, 0.04], [0.02, 0.18], [0, 0.18]], 4.16, 0.37, 0.24, 'stone_light', 20);
+  P.light(E, 3.98, 0.62, 0.25, 'lamp', 'bed', 0.3);
   // BERENT pendants (П-1) over the left nightstand
-  for (const [u, h] of [[1.08, 1.12], [1.28, 1.38]]) {
+  for (const [u, h] of [[1.2, 1.12], [1.48, 1.38]]) {
     const x = 6.165 - 0.25;
     W.cyl(0.004, 0.004, CEIL - h - 0.22, x, h + 0.22, u, 'black', 6);
     W.cyl(0.018, 0.018, 0.12, x, h + 0.1, u, 'stone_light', 12);
@@ -389,9 +392,9 @@ function bedroom(B, W) {
     P.light(W, x, h + 0.02, u, 'lamp', 'bed', 0.22);
   }
   // Boca Airblade floating bed 1800×2000 (head east)
-  const bed = W.sub(5.06, 0, 2.205, -HP); // local +z = west (foot)
-  bed.box(0.6, 0.14, 1.2, 0, 0.0, 0, 'black');
-  bed.rbox(1.86, 0.13, 2.06, 0.04, 0, 0.14, 0.0, 'bed_fabric', 0, 3);
+  const bed = W.sub(5.08, 0, 2.64, -HP); // local +z = west (foot)
+  bed.box(1.0, 0.15, 1.3, 0, 0.0, 0.05, 'black'); // recessed plinth — the frame appears to float
+  bed.rbox(1.86, 0.15, 2.06, 0.04, 0, 0.15, 0.0, 'bed_fabric', 0, 3);
   bed.rbox(1.78, 0.2, 1.98, 0.08, 0, 0.27, 0.0, 'linen_white', 0, 4);
   bed.rbox(1.92, 0.1, 1.5, 0.05, 0, 0.42, 0.22, 'linen_white', 0, 4);
   bed.rbox(1.95, 0.32, 0.04, 0.02, 0, 0.17, 0.98, 'linen_white', 0, 2);
@@ -400,7 +403,7 @@ function bedroom(B, W) {
   P.pillow(bed, 0.75, 0.48, 0.17, -0.42, 0.52, -0.78, 'pillow_white', 0, -0.95);
   P.pillow(bed, 0.75, 0.48, 0.17, 0.42, 0.52, -0.78, 'pillow_white', 0, -0.95);
   P.collide(bed, 1.9, 2.1);
-  P.rug(W.sub(4.6, 0, 2.2), 2.0, 2.5, 'rug_cream');
+  P.rug(W.sub(4.75, 0, 2.64), 2.3, 2.8, 'rug_cream');
   // desk ИМ-14 under the window + drawer unit ИМ-15, tubular radiator Arbonia
   W.box(0.8, 0.65, 0.6, 4.01, 0, 0.47, 'wood_dark');
   CW.drawer(W.sub(4.01, 0.005, 0.77), 0.79, 0.32, 0.5, (L) => flat(L, 0.79, 0.32, 'wood_dark'), (f, iw, ih, id) => CW.drawerFill(f, iw, ih, id, 'clothes', 7), { boxH: 0.2 });
@@ -412,7 +415,7 @@ function bedroom(B, W) {
   W.box(0.32, 0.012, 0.22, 4.9, 0.745, 0.6, 'steel');
   const lp = W.sub(4.9, 0.757, 0.49, 0, -0.25); lp.box(0.32, 0.21, 0.008, 0, 0, 0, 'steel'); lp.box(0.3, 0.19, 0.002, 0, 0.01, 0.005, 'laptop');
   P.books(W, 4.25, 0.745, 0.45, 0.1); W.cyl(0.07, 0.06, 0.25, 3.8, 0.745, 0.4, 'glass_cup', 20); P.vaseBranches(W, 3.8, 0.99, 0.4, 0.8);
-  P.officeChair(W.sub(4.7, 0.004, 1.2, PI), 'sofa');
+  P.officeChair(W.sub(4.62, 0.004, 1.12, PI + 0.12), 'sofa');
   P.COLLIDE.push([3.61, 0.17, 5.75, 0.87]);
   // shelving column ИМ-14 in the NE corner (x 5.745..6.165, z 0.17..0.95) with olive back
   const sh = W.sub(5.955, 0, 0.95, PI); // front faces north? -> shelves open toward west: use west-facing frame
@@ -428,23 +431,27 @@ function bedroom(B, W) {
     if (k % 2) P.books(SC, 0.4, y, -0.22, 0.1); else { P.books(SC, 0.7, y, -0.22, -0.15); SC.lathe([[0, 0], [0.05, 0], [0.06, 0.1], [0.03, 0.2], [0, 0.2]], 0.35, y, -0.2, 'ceramic', 20); }
   }
   SC.box(0.74, 0.025, 0.4, 0.56, 0.7, -0.2, 'wood');
+  SC.box(0.78, 0.025, 0.42, 0.56, ph - 0.025, -0.21, 'wood'); // top board closes the column under the cornice
   P.COLLIDE.push([5.745, 0.17, 6.165, 0.95]);
   // wardrobe ИМ-10 in the bay (front z = 4.285, x 4.41..6.165): cream doors, olive recessed pulls; local x = -world x
   const WD = W.sub(6.165, 0, 4.285, PI);
-  CW.carcass(WD.sub(0.8775, 0, -0.01), 1.755, LOW, 0.59, 'wardrobe_cream', { parts: [0.42 - 0.8775, 1.086 - 0.8775], shelves: [[2.3, -0.8775 + 0.02, 0.8775 - 0.02]] });
-  const secs = [[0, 0.42, 'L'], [0.42, 1.086, 'R'], [1.086, 1.755, 'L']];
-  for (const [a, b, hinge] of secs) {
-    const w = b - a - 0.03, c = (a + b) / 2;
-    CW.hinged(WD.sub(c + (hinge === 'L' ? 0.015 : -0.015), 0, 0), w, hinge, (L) => flat(L, w, LOW, 'wardrobe_cream'), { angle: 1.6 });
+  // sheet 49: sections 420 / 666 / 666, hinged doors to 2.05, mezzanine doors 2.05..2.57, fixed frieze to the ceiling
+  const DH = 2.05, MZ = 2.57, SG = 0.03; // SG = olive recessed pull channel at the handle edge of each section
+  CW.carcass(WD.sub(0.8775, 0, -0.01), 1.755, LOW, 0.59, 'wardrobe_cream', { parts: [0.42 - 0.8775, 1.086 - 0.8775], shelves: [[DH, -0.8775 + 0.02, 0.8775 - 0.02], [MZ, -0.8775 + 0.02, 0.8775 - 0.02]] });
+  WD.box(1.755, LOW - MZ, 0.019, 0.8775, MZ + 0.002, 0.0095, 'wardrobe_cream'); // frieze
+  for (const [a, b] of [[0, 0.42], [0.42, 1.086], [1.086, 1.755]]) {
+    const w = b - a - SG - 0.004, c = a + 0.002 + w / 2;
+    CW.hinged(WD.sub(c, 0, 0), w, 'L', (L) => flat(L, w, DH - 0.002, 'wardrobe_cream'), { angle: 1.6 });
+    CW.hinged(WD.sub(c, DH + 0.002, 0), w, 'L', (L) => flat(L, w, MZ - DH - 0.004, 'wardrobe_cream'), { angle: 1.5 });
+    WD.box(SG, MZ, 0.012, b - SG / 2, 0, -0.004, 'olive_strip'); // pull channel, recessed behind the door plane
   }
-  for (const u of [0.42, 1.086, 1.755]) WD.box(0.03, LOW - 0.1, 0.022, u - 0.015, 0.05, 0.011, 'olive_strip');
-  CW.fillSection(WD, 0.02, 0.4, 0.02, 2.28, -0.3, 0.52, 'shelves', ['clothes1', 'clothes7', 'clothes5', 'clothes6'], 4);
-  CW.fillSection(WD, 0.44, 1.07, 0.02, 2.28, -0.3, 0.52, 'hang', ['clothes1', 'clothes2', 'clothes5', 'clothes7', 'clothes6'], 6);
-  CW.fillSection(WD, 1.1, 1.74, 0.02, 2.28, -0.3, 0.52, 'hang', ['clothes3', 'clothes4', 'clothes1', 'clothes6'], 8);
-  for (let i = 0; i < 4; i++) CW.storeBox(WD, 0.05 + i * 0.42, 2.32, -0.3, 0.36, 0.3, 0.45, 'box_linen');
+  CW.fillSection(WD, 0.02, 0.4, 0.02, DH - 0.02, -0.3, 0.52, 'shelves', ['clothes1', 'clothes7', 'clothes5', 'clothes6'], 4);
+  CW.fillSection(WD, 0.44, 1.07, 0.02, DH - 0.02, -0.3, 0.52, 'hang', ['clothes1', 'clothes2', 'clothes5', 'clothes7', 'clothes6'], 6);
+  CW.fillSection(WD, 1.1, 1.74, 0.02, DH - 0.02, -0.3, 0.52, 'hang', ['clothes3', 'clothes4', 'clothes1', 'clothes6'], 8);
+  for (let i = 0; i < 4; i++) CW.storeBox(WD, 0.05 + i * 0.42, DH + 0.02, -0.3, 0.36, 0.3, 0.45, 'box_linen');
   P.COLLIDE.push([4.41, 4.285, 6.165, 4.885]);
   // TV on the partition (x = 3.2) facing east
-  W.rbox(0.035, 0.72, 1.25, 0.004, 3.218, 1.15, 2.3, 'appliance', 0, 2); W.box(0.002, 0.69, 1.22, 3.236, 1.165, 2.3, 'tv');
+  W.rbox(0.035, 0.72, 1.25, 0.004, 3.218, 1.15, 2.64, 'appliance', 0, 2); W.box(0.002, 0.69, 1.22, 3.236, 1.165, 2.64, 'tv');
   // lights: 4 double spots, 2 surface spots over the desk, cornice LED along the curtain slot
   for (const [x, z] of [[4.04, 1.34], [5.33, 1.34], [4.04, 3.78], [5.33, 3.78]]) spotDuo(W, x, z);
   spotSurface(W, 4.5, 0.49); spotSurface(W, 5.33, 0.49);
@@ -478,7 +485,7 @@ function bath(B, W) {
   CW.drawerFill(V.sub(0, 1.168, 0.075), 0.76, 0.3, 0.1, 'toiletries', 6); CW.drawerFill(V.sub(0, 1.47, 0.075), 0.76, 0.3, 0.1, 'toiletries', 7);
   V.box(0.76, 0.012, 0.11, 0, 1.46, 0.075, 'glass_display'); V.box(0.76, 0.012, 0.11, 0, 1.76, 0.075, 'glass_display');
   CW.hinged(V.sub(0, 1.15, 0.14), 0.8, 'L', (L) => {
-    L.box(0.8, 0.95, 0.008, 0, 0, 0.004, 'black'); L.box(0.78, 0.93, 0.004, 0, 0.01, 0.01, 'mirror');
+    L.box(0.8, 0.95, 0.008, 0, 0, 0.004, 'black'); L.box(0.78, 0.93, 0.004, 0, 0.01, 0.01, 'mirror_bath');
   }, { angle: 1.6 });
   V.box(0.8, 0.008, 0.02, 0, 1.14, 0.1, 'led');
   P.light(V, 0, 1.6, 0.4, 'led', 'bath', 0.14);

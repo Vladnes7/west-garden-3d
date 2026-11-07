@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { buildMaterials } from './materials.js';
+import { buildMaterials, MAT } from './materials.js';
 import { buildArchitecture } from './plan.js';
 import { buildRooms } from './rooms.js';
 import { MOVERS } from './casework.js';
@@ -20,14 +20,14 @@ async function boot() {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   let quality = 'high';
   try { quality = localStorage.getItem('wg103-quality') || 'high'; } catch (e) { /* no storage */ }
-  const DPR = Math.min(devicePixelRatio || 1, quality === 'high' ? 1.25 : 1);
+  const DPR = Math.min(devicePixelRatio || 1, quality === 'high' ? 2 : 1);
   renderer.setPixelRatio(DPR);
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.AgXToneMapping !== undefined ? THREE.AgXToneMapping : THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#cfd9e3');
@@ -89,9 +89,21 @@ async function boot() {
     renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
   });
 
-  window.__setQuality = (q) => { quality = q; try { localStorage.setItem('wg103-quality', q); } catch (e) { /* */ } applyQ(q); const d = Math.min(devicePixelRatio || 1, q === 'high' ? 1.25 : 1); dprNow = d; renderer.setPixelRatio(d); composer.setPixelRatio(d); composer.setSize(innerWidth, innerHeight); lighting.sun.shadow.mapSize.set(q === 'high' ? 4096 : 2048, q === 'high' ? 4096 : 2048); if (lighting.sun.shadow.map) { lighting.sun.shadow.map.dispose(); lighting.sun.shadow.map = null; } renderer.shadowMap.needsUpdate = true; };
+  window.__setQuality = (q) => { quality = q; try { localStorage.setItem('wg103-quality', q); } catch (e) { /* */ } applyQ(q); const d = Math.min(devicePixelRatio || 1, q === 'high' ? 2 : 1); dprNow = d; renderer.setPixelRatio(d); composer.setPixelRatio(d); composer.setSize(innerWidth, innerHeight); lighting.sun.shadow.mapSize.set(q === 'high' ? 4096 : 2048, q === 'high' ? 4096 : 2048); if (lighting.sun.shadow.map) { lighting.sun.shadow.map.dispose(); lighting.sun.shadow.map = null; } renderer.shadowMap.needsUpdate = true; };
   setLoad(1, 'Готово'); await frame();
   // warm-up compile
+  // mirrors: static cube reflections baked from a point in front of each mirror (re-baked on light / finish changes)
+  const probes = [['mirror_bed', 5.1, 1.5, 3.0], ['mirror_hall', 3.6, 1.5, 7.07], ['mirror_bath', 4.89, 1.55, 5.4]].map(([k, x, y, z]) => {
+    const rt = new THREE.WebGLCubeRenderTarget(512, { type: THREE.HalfFloatType, generateMipmaps: false });
+    const cam = new THREE.CubeCamera(0.05, 40, rt); cam.position.set(x, y, z); scene.add(cam);
+    MAT[k].envMap = rt.texture; MAT[k].envMapIntensity = 1; MAT[k].needsUpdate = true;
+    return { k, cam };
+  });
+  let bakeIn = 0;
+  const bakeMirrors = () => { for (const p of probes) { MAT[p.k].visible = false; p.cam.update(renderer, scene); MAT[p.k].visible = true; } };
+  window.__bakeMirrors = () => { bakeIn = 3; };
+  const setModeRaw = lighting.setMode; lighting.setMode = (m) => { setModeRaw(m); bakeIn = 3; };
+  bakeIn = 3;
   renderer.compile(scene, camera);
   $('#load').classList.add('hidden');
   ui.showStart();
@@ -112,6 +124,7 @@ async function boot() {
       for (const me of m.inside) me.visible = m.open > 0.004;
     }
     if (moving || wasMoving) renderer.shadowMap.needsUpdate = true;
+    if (bakeIn > 0 && --bakeIn === 0) bakeMirrors();
     if (++hoverTick % 6 === 0) player.updateHover();
     wasMoving = moving;
     player.update(dt);

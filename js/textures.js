@@ -21,13 +21,17 @@ export function herringbone(size = 2048, n = 6) {
       const U = (px / size) * span, V = (py / size) * span;
       const x = (U + V) / S2, y = (U - V) / S2;
       const d = x - y;
-      const b = Math.floor((d + n) / (2 * n));
-      const lx = x - b * n, ly = y + b * n;
-      let id, along, across, len;
-      let k = Math.floor(ly);
-      if (lx - k >= 0 && lx - k < n) { id = 2 * k; along = lx - k; across = ly - k; }
-      else { k = Math.floor(lx); id = 2 * k + 1; along = ly - (k + 1); across = lx - k; }
-      len = n;
+      // zigzag strips repeat every (n, -n); the strip edge is a staircase, so test the nearest strips
+      const b0 = Math.floor((d + n) / (2 * n));
+      let b = b0, id = 0, along = 0, across = 0;
+      for (const bc of [b0, b0 - 1, b0 + 1]) {
+        const lx = x - bc * n, ly = y + bc * n;
+        let k = Math.floor(ly);
+        if (lx - k >= 0 && lx - k < n) { b = bc; id = 2 * k; along = lx - k; across = ly - k; break; }
+        k = Math.floor(lx);
+        if (ly - (k + 1) >= 0 && ly - (k + 1) < n) { b = bc; id = 2 * k + 1; along = ly - (k + 1); across = lx - k; break; }
+      }
+      const len = n;
       // periodic plank identity
       const kk = ((Math.floor(id / 2) % m) + m) % m;
       const bb = ((b % 2) + 2) % 2;
@@ -559,38 +563,57 @@ export function porcelain(size = 512) {
 }
 
 // City panorama for windows (equirect-like strip)
+// High-floor view (cylinder r=140 m, y -110..50): horizon at eye level (v = 0.30), roofs, parks and a river below it.
 export function cityPanorama(w = 4096, h = 1024) {
   const R = rng(500);
   const c = canvas(w, h), ctx = c.getContext('2d');
-  const sky = ctx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, '#9fb8d3'); sky.addColorStop(0.45, '#cfdbe6'); sky.addColorStop(0.62, '#e9e6df'); sky.addColorStop(1, '#bfb8ad');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-  // clouds
-  for (let i = 0; i < 70; i++) {
-    const x = R() * w, y = R() * h * 0.35, s = 60 + R() * 200;
-    const g = ctx.createRadialGradient(x, y, 1, x, y, s);
-    g.addColorStop(0, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g; ctx.fillRect(x - s, y - s, s * 2, s * 2);
+  const hz = Math.round(h * 0.3);
+  const hex = (s) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16));
+  const haze = hex('#dfe5e8');
+  const tint = (rgb, f, a = 1) => `rgba(${rgb.map((v, i) => Math.round(v + (haze[i] - v) * f)).join(',')},${a})`;
+  // sky
+  const sky = ctx.createLinearGradient(0, 0, 0, hz);
+  sky.addColorStop(0, '#8fb0cf'); sky.addColorStop(0.65, '#c3d5e4'); sky.addColorStop(1, '#e3e8ea');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, hz + 2);
+  for (let i = 0; i < 90; i++) { // flat cumulus
+    const x = R() * w, y = R() * hz * 0.75, sx = 80 + R() * 260, sy = sx * (0.18 + R() * 0.15);
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, sy / sx);
+    const g = ctx.createRadialGradient(0, 0, 1, 0, 0, sx); g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(-sx, -sx, sx * 2, sx * 2); ctx.restore();
   }
-  const horizon = h * 0.62;
-  const layer = (count, minH, maxH, tone, alpha, winA) => {
-    for (let i = 0; i < count; i++) {
-      const bw = 30 + R() * 110, bh = minH + R() * (maxH - minH), x = R() * w;
-      const t = tone + (R() - 0.5) * 30;
-      ctx.fillStyle = `rgba(${t},${t + 4},${t + 10},${alpha})`;
-      ctx.fillRect(x, horizon - bh, bw, bh + h);
-      if (winA > 0) {
-        ctx.fillStyle = `rgba(230,235,240,${winA})`;
-        for (let yy = horizon - bh + 8; yy < horizon + 60; yy += 9) for (let xx = x + 4; xx < x + bw - 4; xx += 7) if (R() > 0.35) ctx.fillRect(xx, yy, 3, 4);
-      }
+  // distant skyline on the horizon
+  for (let i = 0; i < 260; i++) { const bw = 4 + R() * 16, bh = 3 + R() * (R() < 0.08 ? 34 : 12), x = R() * w; ctx.fillStyle = tint([150, 160, 172], 0.55 + R() * 0.25, 0.9); ctx.fillRect(x, hz - bh, bw, bh + 2); }
+  // ground base
+  const gr = ctx.createLinearGradient(0, hz, 0, h);
+  gr.addColorStop(0, '#c3cac6'); gr.addColorStop(0.2, '#97a28a'); gr.addColorStop(1, '#5c6e48');
+  ctx.fillStyle = gr; ctx.fillRect(0, hz, w, h - hz);
+  // river band (Setun valley feel) across part of the view
+  ctx.fillStyle = tint([126, 146, 158], 0.35);
+  ctx.beginPath(); ctx.moveTo(0, hz + 34);
+  for (let x = 0; x <= w; x += 64) ctx.lineTo(x, hz + 34 + Math.sin(x / 520) * 10 + Math.sin(x / 170) * 3);
+  for (let x = w; x >= 0; x -= 64) ctx.lineTo(x, hz + 46 + Math.sin(x / 520) * 12 + Math.sin(x / 200) * 3);
+  ctx.closePath(); ctx.fill();
+  // city blocks and tree clusters, far → near (lower in the texture = closer = bigger)
+  const items = [];
+  for (let i = 0; i < 4200; i++) items.push(Math.pow(R(), 0.8));
+  items.sort((a, b) => a - b);
+  const roofs = [[176, 170, 160], [150, 148, 145], [168, 120, 96], [196, 190, 178], [120, 122, 126], [205, 200, 190]];
+  const greens = [[78, 98, 62], [96, 116, 72], [64, 84, 56], [112, 128, 84]];
+  for (const t of items) {
+    const y = hz + 8 + (h - hz) * Math.pow(t, 1.35), sc = 2 + 70 * Math.pow(t, 1.6), f = Math.pow(1 - t, 2.4) * 0.6, x = R() * w;
+    if (R() < 0.64) { // tree crowns
+      const gc = greens[Math.floor(R() * greens.length)], r = sc * (0.35 + R() * 0.35);
+      for (let k = 0; k < 4; k++) { ctx.fillStyle = tint(gc.map((v) => v * (0.85 + R() * 0.3)), f); ctx.beginPath(); ctx.ellipse(x + (R() - 0.5) * r * 1.6, y + (R() - 0.5) * r * 0.5, r, r * 0.7, 0, 0, 6.283); ctx.fill(); }
+    } else { // building: roof + lit facade + window rows
+      const rc = roofs[Math.floor(R() * roofs.length)], bw = sc * (1 + R() * 2.2), bh = sc * (0.4 + R() * (R() < 0.15 ? 3.5 : 1.2)), rd = sc * 0.45;
+      ctx.fillStyle = tint(rc.map((v) => v * 0.78), f); ctx.fillRect(x, y - bh, bw, bh);
+      ctx.fillStyle = tint(rc, f); ctx.fillRect(x, y - bh - rd, bw, rd);
+      if (sc > 9) { ctx.fillStyle = tint([70, 80, 92], f, 0.55); for (let yy = y - bh + sc * 0.12; yy < y - sc * 0.1; yy += sc * 0.22) for (let xx = x + sc * 0.08; xx < x + bw - sc * 0.1; xx += sc * 0.18) ctx.fillRect(xx, yy, sc * 0.09, sc * 0.1); }
     }
-  };
-  layer(260, 20, 120, 170, 0.6, 0);
-  layer(180, 40, 230, 140, 0.85, 0.25);
-  layer(90, 80, 330, 110, 0.95, 0.35);
-  // ground haze
-  const hz = ctx.createLinearGradient(0, horizon - 80, 0, h);
-  hz.addColorStop(0, 'rgba(225,228,230,0)'); hz.addColorStop(0.3, 'rgba(225,228,230,0.35)'); hz.addColorStop(1, 'rgba(150,150,145,0.9)');
-  ctx.fillStyle = hz; ctx.fillRect(0, horizon - 80, w, h);
+  }
+  // horizon haze
+  const hg = ctx.createLinearGradient(0, hz - 30, 0, hz + 90);
+  hg.addColorStop(0, 'rgba(223,229,232,0)'); hg.addColorStop(0.35, 'rgba(223,229,232,0.7)'); hg.addColorStop(1, 'rgba(223,229,232,0)');
+  ctx.fillStyle = hg; ctx.fillRect(0, hz - 30, w, 120);
   return c;
 }
