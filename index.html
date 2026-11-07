@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>West Garden 43 м²</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="West Garden">
+<meta name="theme-color" content="#1b1a18">
+<!--MANIFEST-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b1a18;
+    --panel: rgba(250, 247, 242, 0.92);
+    --panel-solid: #faf7f2;
+    --ink: #2a2622;
+    --ink-2: #6f675e;
+    --line: rgba(42, 38, 34, 0.12);
+    --accent: #9e4b35;
+    --accent-ink: #fff8f2;
+    --chip: rgba(42, 38, 34, 0.06);
+    --shadow: 0 10px 30px rgba(20, 16, 12, 0.18);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --panel: rgba(30, 28, 26, 0.9); --panel-solid: #1e1c1a; --ink: #f1ece5; --ink-2: #b3aaa0; --line: rgba(241, 236, 229, 0.14); --chip: rgba(241, 236, 229, 0.08); --accent: #c46a50; --shadow: 0 10px 30px rgba(0,0,0,0.45); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] { --panel: rgba(30, 28, 26, 0.9); --panel-solid: #1e1c1a; --ink: #f1ece5; --ink-2: #b3aaa0; --line: rgba(241, 236, 229, 0.14); --chip: rgba(241, 236, 229, 0.08); --accent: #c46a50; --shadow: 0 10px 30px rgba(0,0,0,0.45); color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { overscroll-behavior: none; touch-action: none; }
+  canvas#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; outline: none; }
+  button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .glass { background: var(--panel); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: var(--radius); }
+
+  /* top bar */
+  #brand { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); padding: 10px 14px; z-index: 5; pointer-events: none; }
+  #brand h1 { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 22px; margin: 0; letter-spacing: 0.01em; }
+  #brand .room { font-size: 12px; color: var(--ink-2); margin-top: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+  #bar { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); display: flex; gap: 8px; z-index: 6; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px); }
+  .seg { display: flex; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: transparent; padding: 7px 11px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+  .seg button.on { background: var(--ink); color: var(--panel-solid); }
+  .btn { border: 1px solid var(--line); padding: 9px 14px; font-size: 13px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+  /* panel */
+  #panel { position: fixed; top: calc(70px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: 340px; z-index: 6; display: flex; flex-direction: column; transform: translateX(calc(100% + 24px)); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  #panel.open { transform: none; }
+  #panel header { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+  #panel header h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin: 0 0 8px; font-weight: 600; }
+  #rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+  #rooms button { border: 0; background: var(--chip); padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+  #rooms button.on { background: var(--ink); color: var(--panel-solid); }
+  #ctrls { overflow-y: auto; padding: 6px 16px 10px; flex: 1; }
+  .ctrl { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .ctrl:last-child { border-bottom: 0; }
+  .ctrl .lbl { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .ctrl .val { font-size: 12px; color: var(--ink-2); margin-bottom: 9px; min-height: 16px; }
+  .sw { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sw button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background-size: cover; background-position: center; position: relative; padding: 0; }
+  .sw button.on { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .sw button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #panel footer { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
+  #panel footer .btn { flex: 1; background: transparent; border-radius: 8px; }
+  .sec { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 14px 0 0; }
+
+  /* minimap */
+  #map { position: fixed; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 8px; z-index: 5; }
+  #map canvas { display: block; width: 236px; height: 200px; cursor: pointer; }
+  #map .hint { font-size: 11px; color: var(--ink-2); padding: 4px 2px 0; }
+  /* room buttons (overview mode only) */
+  #roomBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: none; gap: 2px; padding: 4px; z-index: 6; max-width: calc(100vw - 32px); overflow-x: auto; scrollbar-width: none; }
+  #roomBar::-webkit-scrollbar { display: none; }
+  body:not(.walk) #roomBar { display: flex; }
+  body:not(.walk) #map { display: none; }
+  #roomBar button { border: 0; background: transparent; border-radius: 7px; padding: 7px 11px; text-align: left; white-space: nowrap; display: flex; flex-direction: column; gap: 1px; flex: none; }
+  #roomBar button span { font-size: 13px; font-weight: 600; }
+  #roomBar button small { font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  #roomBar button:hover, #roomBar button:focus-visible { background: var(--ink); color: var(--panel-solid); outline: none; }
+  #roomBar button:hover small, #roomBar button:focus-visible small { color: inherit; opacity: .75; }
+  #roomTip { position: fixed; z-index: 7; padding: 12px 14px; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity .15s, transform .15s; }
+  #roomTip.show { opacity: 1; transform: none; }
+  #roomTip b { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; display: block; }
+  #roomTip .m2 { display: inline-block; margin: 2px 0 6px; font-size: 12px; font-weight: 600; color: var(--accent); }
+  #roomTip p { margin: 0 0 6px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+  #roomTip p.opens:empty { display: none; }
+  #roomTip i { font-style: normal; font-size: 12px; font-weight: 600; }
+  body.touch #roomTip { display: none; }
+  #cross.hot { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: transparent; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.25); }
+
+  #cross { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: 0 0 0 1px rgba(0,0,0,.35); z-index: 4; display: none; pointer-events: none; }
+  #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); opacity: 0; padding: 9px 14px; font-size: 13px; z-index: 7; transition: all .3s; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateX(-50%); }
+
+  /* overlays */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: radial-gradient(1200px 700px at 30% 20%, rgba(158,75,53,.25), transparent 60%), rgba(18,16,14,.72); backdrop-filter: blur(4px); }
+  .card { width: min(520px, calc(100vw - 32px)); padding: 28px 28px 24px; }
+  .card h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.02; margin: 0 0 8px; font-weight: 600; }
+  .card p { margin: 0 0 18px; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13px; margin: 0 0 22px; }
+  .keys kbd { font-family: inherit; font-size: 12px; font-weight: 600; background: var(--chip); border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
+  .card .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .card .btn { border-radius: 8px; padding: 12px 18px; font-size: 14px; }
+  #load .bar { height: 3px; background: var(--chip); border-radius: 3px; overflow: hidden; margin-top: 14px; }
+  #load .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  #load .step { font-size: 13px; color: var(--ink-2); margin-top: 10px; min-height: 18px; }
+  .qrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--ink-2); margin: -8px 0 18px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .qrow .seg { background: var(--chip); border-radius: 9px; }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { #panel, #toast, #load .bar i { transition: none; } }
+
+  #joy { position: fixed; left: calc(28px + env(safe-area-inset-left, 0px)); bottom: calc(28px + env(safe-area-inset-bottom, 0px)); width: 132px; height: 132px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: radial-gradient(circle, rgba(255,255,255,.16), rgba(20,16,12,.22)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); pointer-events: none; z-index: 5; display: none; }
+  #joy i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: 0 4px 14px rgba(0,0,0,.3); transition: transform .05s; }
+  #joy.active { border-color: rgba(255,255,255,.85); }
+  #lookHint { position: fixed; right: calc(20px + env(safe-area-inset-right, 0px)); bottom: calc(134px + env(safe-area-inset-bottom, 0px)); font-size: 11px; color: rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.6); z-index: 4; display: none; pointer-events: none; transition: opacity .6s; }
+  body.touch.walk #joy, body.touch.walk #lookHint { display: block; }
+  #map .mroom { display: none; font-size: 11px; font-weight: 600; padding: 4px 2px 0; }
+  #fsBtn { display: grid; place-items: center; padding: 9px 11px; }
+
+  body.touch #brand, body.small #brand { display: none; }
+  body.touch #map, body.small #map { left: calc(10px + env(safe-area-inset-left, 0px)); top: calc(62px + env(safe-area-inset-top, 0px)); bottom: auto; padding: 6px; }
+  body.touch #map canvas, body.small #map canvas { width: 128px; height: 108px; }
+  body.touch #map .hint, body.small #map .hint { display: none; }
+  body.touch #map .mroom, body.small #map .mroom { display: block; max-width: 128px; }
+  body.touch #bar, body.small #bar { top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); left: calc(10px + env(safe-area-inset-left, 0px)); justify-content: flex-end; gap: 6px; }
+  body.touch .seg button, body.small .seg button { padding: 7px 8px; font-size: 12px; }
+  body.touch .btn, body.small .btn { padding: 8px 10px; font-size: 12px; }
+  @media (max-height: 460px) { body.touch #map canvas { width: 104px; height: 88px; } #joy { width: 112px; height: 112px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); } }
+  @media (max-width: 720px) {
+    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 62vh; border-radius: 16px 16px 0 0; transform: translateY(105%); padding-bottom: env(safe-area-inset-bottom, 0px); }
+    #panel.open { transform: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "postprocessing": "https://cdn.jsdelivr.net/npm/postprocessing@6.36.0/build/index.js",
+  "n8ao": "https://cdn.jsdelivr.net/npm/n8ao@1.10.1/dist/N8AO.js"
+} }
+</script>
+</head>
+<body>
+<canvas id="gl" tabindex="0"></canvas>
+
+<div id="brand" class="glass"><h1>West Garden · 43 м²</h1><div class="room" id="roomName">—</div></div>
+
+<div id="bar">
+  <div class="seg glass" id="modeSeg"><button data-m="walk" class="on">Прогулка</button><button data-m="orbit">Обзор</button></div>
+  <div class="seg glass" id="timeSeg"><button data-t="day" class="on">День</button><button data-t="evening">Вечер</button><button data-t="night">Ночь</button></div>
+  <button class="btn glass primary" id="openPanel">Отделка</button>
+  <button class="btn glass" id="fsBtn" aria-label="На весь экран" title="На весь экран (F)"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+  <button class="btn glass" id="helpBtn" aria-label="Подсказка">?</button>
+</div>
+
+<aside id="panel" class="glass" aria-label="Отделка">
+  <header><h2>Отделка и цвета</h2><div id="rooms"></div></header>
+  <div id="ctrls"></div>
+  <footer><button class="btn" id="resetBtn">Как в проекте</button><button class="btn" id="closePanel">Готово</button></footer>
+</aside>
+
+<div id="map" class="glass"><canvas id="mapc" width="472" height="400"></canvas><div class="hint">Нажмите на комнату, чтобы перейти</div><div class="mroom" id="mapRoom"></div></div>
+<div id="cross"></div>
+<div id="joy" aria-hidden="true"><i></i></div>
+<div id="lookHint">Свайп здесь — осмотреться</div>
+<nav id="roomBar" class="glass" aria-label="Комнаты"></nav>
+<div id="roomTip" class="glass" role="tooltip"></div>
+<div id="toast" class="glass"></div>
+
+<div id="load" class="overlay">
+  <div class="card glass">
+    <h1>West Garden · 43 м²</h1>
+    <p>Готовлю 3D-модель по рабочим чертежам: стены, проёмы, отделка и мебель по проекту.</p>
+    <div class="bar"><i id="loadBar"></i></div>
+    <div class="step" id="loadStep">Запуск…</div>
+  </div>
+</div>
+
+<div id="start" class="overlay hidden">
+  <div class="card glass">
+    <h1>Добро пожаловать</h1>
+    <p>Пройдитесь по квартире, откройте двери и попробуйте другие цвета и материалы на панели «Отделка».</p>
+    <div class="keys" id="keysDesk">
+      <kbd>W A S D</kbd><span>идти; с Shift быстрее</span>
+      <kbd>Мышь</kbd><span>осмотреться</span>
+      <kbd>Клик / E</kbd><span>открыть дверь, шкаф или ящик (точка прицела подсвечивается)</span>
+      <kbd>Esc</kbd><span>освободить курсор, чтобы пользоваться панелью</span>
+    </div>
+    <div class="keys hidden" id="keysTouch">
+      <kbd>Левая половина</kbd><span>джойстик, чтобы идти</span>
+      <kbd>Правая половина</kbd><span>свайп, чтобы осмотреться</span>
+      <kbd>Тап справа</kbd><span>по двери, шкафу или ящику — открыть</span>
+    </div>
+    <div class="qrow"><span>Графика</span><div class="seg" id="qSeg"><button data-q="high" class="on">Высокая</button><button data-q="fast">Быстрая</button></div></div>
+    <div class="row"><button class="btn primary" id="enterBtn">Войти в квартиру</button><button class="btn" id="overviewBtn">Обзор сверху</button></div>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

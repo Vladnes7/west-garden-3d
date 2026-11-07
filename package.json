@@ -1,0 +1,17 @@
+{
+  "name": "west-garden-3d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Интерактивная 3D-прогулка по квартире 43 м² (West Garden, кв. 103) по рабочим чертежам",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "dev": "python3 -m http.server 8794"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.0",
+    "n8ao": "1.10.1",
+    "postprocessing": "6.36.0",
+    "three": "0.160.0"
+  }
+}
