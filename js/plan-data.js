@@ -27,7 +27,7 @@ export const WALLS = [
   R(4220, 6610, 7640, 8045),
   R(4395, 5216, 7608, 7640),     // shower back wall
   R(5216, 6125, 7065, 7640),     // service shafts (bathroom SE)
-  R(5216, 5430, 6829, 7065),
+  R(5216, 5430, 6565, 7065),     // shower side wall runs to the glass line (the screen needs a wall to fix to)
 ];
 
 // Windows on the north facade: opening a..b (mm along x), sill height, frame members (mm along x).

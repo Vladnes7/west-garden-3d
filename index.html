@@ -42,7 +42,7 @@
   /* top bar */
   #brand { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); padding: 10px 14px; z-index: 5; pointer-events: none; }
   #brand { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 14px; }
-  #brand .wgm { width: 46px; height: 22px; color: var(--sage); flex: none; }
+  #brand .wgm { width: 52px; height: 22px; color: var(--sage); flex: none; }
   #brand h1 { font-family: var(--mark); font-weight: 600; font-size: 14px; margin: 0; letter-spacing: 0.16em; text-transform: uppercase; }
   #brand .room { font-family: var(--head); font-size: 12px; color: var(--ink-2); margin-top: 3px; letter-spacing: 0.08em; text-transform: uppercase; }
   #brand .room b { font-weight: 400; color: var(--sage-2); }
@@ -111,7 +111,7 @@
   .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: linear-gradient(180deg, rgba(30,58,40,.78), rgba(18,38,25,.9)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   #load.overlay { background: var(--wg); }
   .card { width: min(540px, calc(100vw - 32px)); padding: 30px 30px 26px; }
-  .card .wgm { display: block; width: 92px; height: 44px; color: var(--sage); margin: 0 0 22px; }
+  .card .wgm { display: block; width: 104px; height: 44px; color: var(--sage); margin: 0 0 22px; }
   .card .kicker { font-family: var(--mark); font-weight: 600; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--sage-2); margin: 0 0 10px; }
   .card h1 { font-family: var(--head); font-size: 42px; line-height: 1.02; margin: 0 0 12px; font-weight: 300; letter-spacing: .01em; text-transform: uppercase; }
   .card .note { font-size: 11px; color: var(--ink-2); opacity: .8; margin: 16px 0 0; }
@@ -165,7 +165,7 @@
 <body>
 <canvas id="gl" tabindex="0"></canvas>
 
-<div id="brand" class="glass"><svg class="wgm" viewBox="0 0 92 44" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linejoin="round"><path d="M24 40 L33 13 L42 40" stroke-width="7.5"/><path d="M78.6 15.4 A15 15 0 1 0 83 27 H69" stroke-width="7.5"/></g><path d="M1.5 4.5 C11 3.5 20.5 21 26.5 41.5 C14.5 37 4.5 23 1.5 4.5 Z" fill="currentColor"/></svg><div><h1>West Garden</h1><div class="room"><b>кв. 103 · 43 м²</b> · <span id="roomName">—</span></div></div></div>
+<div id="brand" class="glass"><svg class="wgm" viewBox="50 48 822 350" aria-hidden="true"><g fill="currentColor"><path d="M55 58 C120 72 200 140 238 240 C252 280 262 330 242 392 C180 340 110 250 80 165 C68 128 58 95 55 58 Z"/><path d="M250 296 C262 240 280 175 304 130 C318 104 333 88 350 86 C367 88 382 104 396 130 C420 175 438 240 452 298 L478 392 L350 252 L242 392 Z"/><path d="M440 296 C462 250 492 205 545 168 L600 230 L572 336 L478 392 L462 392 Z"/><path d="M866 200 C800 204 720 208 662 215 C720 236 800 256 866 260 Z"/></g><path d="M802.2 138.3 A136 136 0 1 0 830.3 236.2" fill="none" stroke="currentColor" stroke-width="72"/></svg><div><h1>West Garden</h1><div class="room"><b>кв. 103 · 43 м²</b> · <span id="roomName">—</span></div></div></div>
 
 <div id="bar">
   <div class="seg glass" id="modeSeg"><button data-m="walk" class="on">Прогулка</button><button data-m="orbit">Обзор</button></div>
@@ -191,7 +191,7 @@
 
 <div id="load" class="overlay">
   <div class="card glass">
-    <svg class="wgm" viewBox="0 0 92 44" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linejoin="round"><path d="M24 40 L33 13 L42 40" stroke-width="7.5"/><path d="M78.6 15.4 A15 15 0 1 0 83 27 H69" stroke-width="7.5"/></g><path d="M1.5 4.5 C11 3.5 20.5 21 26.5 41.5 C14.5 37 4.5 23 1.5 4.5 Z" fill="currentColor"/></svg>
+    <svg class="wgm" viewBox="50 48 822 350" aria-hidden="true"><g fill="currentColor"><path d="M55 58 C120 72 200 140 238 240 C252 280 262 330 242 392 C180 340 110 250 80 165 C68 128 58 95 55 58 Z"/><path d="M250 296 C262 240 280 175 304 130 C318 104 333 88 350 86 C367 88 382 104 396 130 C420 175 438 240 452 298 L478 392 L350 252 L242 392 Z"/><path d="M440 296 C462 250 492 205 545 168 L600 230 L572 336 L478 392 L462 392 Z"/><path d="M866 200 C800 204 720 208 662 215 C720 236 800 256 866 260 Z"/></g><path d="M802.2 138.3 A136 136 0 1 0 830.3 236.2" fill="none" stroke="currentColor" stroke-width="72"/></svg>
     <div class="kicker">West Garden</div>
     <h1>Квартира 103<br>43,33 м²</h1>
     <p>Готовлю 3D-модель по рабочим чертежам: стены, проёмы, отделка и мебель по проекту.</p>
@@ -202,7 +202,7 @@
 
 <div id="start" class="overlay hidden">
   <div class="card glass">
-    <svg class="wgm" viewBox="0 0 92 44" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linejoin="round"><path d="M24 40 L33 13 L42 40" stroke-width="7.5"/><path d="M78.6 15.4 A15 15 0 1 0 83 27 H69" stroke-width="7.5"/></g><path d="M1.5 4.5 C11 3.5 20.5 21 26.5 41.5 C14.5 37 4.5 23 1.5 4.5 Z" fill="currentColor"/></svg>
+    <svg class="wgm" viewBox="50 48 822 350" aria-hidden="true"><g fill="currentColor"><path d="M55 58 C120 72 200 140 238 240 C252 280 262 330 242 392 C180 340 110 250 80 165 C68 128 58 95 55 58 Z"/><path d="M250 296 C262 240 280 175 304 130 C318 104 333 88 350 86 C367 88 382 104 396 130 C420 175 438 240 452 298 L478 392 L350 252 L242 392 Z"/><path d="M440 296 C462 250 492 205 545 168 L600 230 L572 336 L478 392 L462 392 Z"/><path d="M866 200 C800 204 720 208 662 215 C720 236 800 256 866 260 Z"/></g><path d="M802.2 138.3 A136 136 0 1 0 830.3 236.2" fill="none" stroke="currentColor" stroke-width="72"/></svg>
     <div class="kicker">West Garden · кв. 103</div>
     <h1>Добро пожаловать</h1>
     <p>Пройдитесь по квартире, откройте двери и попробуйте другие цвета и материалы на панели «Отделка».</p>

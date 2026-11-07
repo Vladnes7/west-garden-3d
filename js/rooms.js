@@ -88,8 +88,20 @@ function sofa(W) {
   P.pillow(F, 0.5, 0.42, 0.15, 0.36, 0.48, 1.25, 'pillow_white', HP, -0.3);
   P.pillow(F, 0.42, 0.3, 0.12, 0.45, 0.47, 1.95, 'pillow_pattern', HP + 0.1, -0.25);
   P.pillow(F, 0.36, 0.24, 0.12, 0.5, 0.45, 1.05, 'pillow_sand', HP - 0.2, -0.2);
-  F.rbox(0.62, 0.03, 0.7, 0.015, 0.62, 0.405, 2.5, 'throw_knit', 0.15, 2);
-  F.rbox(0.03, 0.28, 0.66, 0.012, 1.02, 0.14, 2.52, 'throw_knit', 0.15, 2);
+  // knit throw: lies on the seat, rolls over the front edge and hangs down (one continuous drape)
+  drape(F, [[0.42, 0.415], [0.8, 0.418], [0.98, 0.412], [1.03, 0.395], [1.055, 0.35], [1.06, 0.25], [1.055, 0.12]], 0.022, 0.66, 2.5, 'throw_knit');
+}
+
+// Cloth drape: centre-line profile pts [[x, y]...] in the frame's x-y plane, thickness t, width w along z (centred on zc).
+function drape(F, pts, t, w, zc, mat) {
+  const off = (sgn) => pts.map(([x, y], i) => {
+    const [ax, ay] = pts[Math.max(0, i - 1)], [bx, by] = pts[Math.min(pts.length - 1, i + 1)];
+    const dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1;
+    return [x - (dy / l) * sgn * t / 2, y + (dx / l) * sgn * t / 2];
+  });
+  const a = off(1), b = off(-1).reverse(), sh = new THREE.Shape();
+  sh.moveTo(a[0][0], a[0][1]); for (const [x, y] of [...a.slice(1), ...b]) sh.lineTo(x, y); sh.closePath();
+  F.extrude(sh, w - 0.02, mat, mat4(0, 0, zc - w / 2 + 0.01), 0.008);
 }
 
 function coffeeTable(F) { // РОЛ 600: terracotta drum with waffle relief
@@ -107,7 +119,7 @@ function tvWall(W) {
   const nich0 = 0.1, nich1 = 0.5;   // lit recessed base niche
   // carcass skin & niche
   const ni = u1 - u0 - 0.04; // niche parts stop inside the 20 mm end panels (no coplanar faces)
-  T.box(ni, nich0, 0.36, (u0 + u1) / 2, 0, -0.2, 'shadowgap');
+  T.box(ni, nich0, 0.38, (u0 + u1) / 2, 0, -0.19, 'wood'); // solid veneer plinth under the lit niche (no dark gap)
   T.box(ni, nich1 - nich0, 0.02, (u0 + u1) / 2, nich0, -0.21, 'lacquer_sage');
   T.box(ni, 0.02, 0.2, (u0 + u1) / 2, nich0, -0.1, 'lacquer_sage');
   T.box(ni - 0.01, 0.008, 0.012, (u0 + u1) / 2, nich1 - 0.012, -0.02, 'led');
@@ -223,11 +235,11 @@ function kitchen(B, W) {
       }
     }
   };
-  const upperUnit = (F, u0, u1, n, mat, kinds, seed = 0) => {
+  const upperUnit = (F, u0, u1, n, mat, kinds, seed = 0, flip = false) => {
     const w = u1 - u0, c = (u0 + u1) / 2, h = up1 - up0;
     CW.carcass(F.sub(c, up0, -0.02), w, h, ud - 0.02, 'k_wood', { shelves: [0.42, 0.84] });
     const dw = w / n;
-    for (let i = 0; i < n; i++) CW.hinged(F.sub(u0 + dw * (i + 0.5), up0, 0), dw, i % 2 ? 'R' : 'L', (L) => flat(L, dw, h, mat), { angle: 1.5 });
+    for (let i = 0; i < n; i++) CW.hinged(F.sub(u0 + dw * (i + 0.5), up0, 0), dw, (i % 2 === 1) !== flip ? 'R' : 'L', (L) => flat(L, dw, h, mat), { angle: 1.5 });
     const z = -ud / 2 - 0.02;
     kinds.forEach((k, j) => CW.kitchenRow(F, u0 + 0.02, u1 - 0.02, up0 + 0.018 + j * 0.42, z, k, seed + j));
     F.box(w - 0.02, 0.008, 0.02, c, up0 - 0.01, -0.06, 'led');
@@ -274,7 +286,7 @@ function kitchen(B, W) {
   // side-run uppers stop at the face of the south uppers (z 7.02) so their corner doors can open; blind corner boxes behind
   upperUnit(W.sub(2.0, 0, 0, -HP), 5.961, 7.02, 3, 'k_wood', ['glasses', 'mugs', 'packs'], 41);
   W.box(0.3, 0.02, 0.55, 2.17, up0 - 0.0, 6.35, 'appliance');
-  upperUnit(W.sub(0.35, 0, 0, HP), -7.02, -5.961, 3, 'k_wood', ['plates', 'plates', 'jars'], 51);
+  upperUnit(W.sub(0.35, 0, 0, HP), -7.02, -5.961, 3, 'k_wood', ['plates', 'plates', 'jars'], 51, true); // corner door hinged away from the corner
   W.box(0.35, up1 - up0, 0.35, 0.175, up0, 7.195, 'k_wood'); W.box(0.35, up1 - up0, 0.35, 2.175, up0, 7.195, 'k_wood');
   upperUnit(W.sub(2.35, 0, 7.02, PI), 0.35, 2.0, 4, 'k_cream', ['jars', 'packs', 'glasses'], 61);
   P.light(W, 1.175, 1.45, 6.9, 'led', 'living', 0.12);

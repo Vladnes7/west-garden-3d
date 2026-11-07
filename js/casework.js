@@ -275,3 +275,25 @@ export function clampHinges(wallHit) {
   }
   return log;
 }
+
+// Pairs of movers whose fully-open leaves / drawers would intersect: opening one closes the other (like a real corner).
+export function computeConflicts() {
+  const pose = (m, t) => { if (m.kind === 'hinge') m.inner.rotation.y = m.sign * t * m.max; else m.inner.position.z = t * m.max; m.inner.updateMatrixWorld(true); };
+  for (const m of MOVERS) { m.conflicts = []; pose(m, 1); }
+  const box = MOVERS.map((m) => { const b = new THREE.Box3(); for (const me of m.meshes) { me.geometry.computeBoundingBox(); b.union(me.geometry.boundingBox); } return { b, M: m.meshes[0].matrixWorld.clone(), inv: m.meshes[0].matrixWorld.clone().invert() }; });
+  const v = new THREE.Vector3();
+  for (let a = 0; a < MOVERS.length; a++) for (let c = a + 1; c < MOVERS.length; c++) {
+    const A = box[a], C = box[c];
+    let hit = false;
+    for (const [P, Q] of [[A, C], [C, A]]) {
+      for (let i = 0; i <= 6 && !hit; i++) for (let j = 0; j <= 6 && !hit; j++) for (let k = 0; k <= 1 && !hit; k++) {
+        v.set(P.b.min.x + (P.b.max.x - P.b.min.x) * i / 6, P.b.min.y + (P.b.max.y - P.b.min.y) * j / 6, P.b.min.z + (P.b.max.z - P.b.min.z) * (0.25 + 0.5 * k)).applyMatrix4(P.M).applyMatrix4(Q.inv);
+        hit = v.x > Q.b.min.x + 0.002 && v.x < Q.b.max.x - 0.002 && v.y > Q.b.min.y + 0.002 && v.y < Q.b.max.y - 0.002 && v.z > Q.b.min.z + 0.001 && v.z < Q.b.max.z - 0.001;
+      }
+      if (hit) break;
+    }
+    if (hit) { MOVERS[a].conflicts.push(MOVERS[c]); MOVERS[c].conflicts.push(MOVERS[a]); }
+  }
+  for (const m of MOVERS) pose(m, 0);
+  return MOVERS.reduce((n, m) => n + m.conflicts.length, 0) / 2;
+}

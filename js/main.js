@@ -5,7 +5,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { buildMaterials, MAT } from './materials.js';
 import { buildArchitecture, wallHit } from './plan.js';
 import { buildRooms } from './rooms.js';
-import { MOVERS, clampHinges } from './casework.js';
+import { MOVERS, clampHinges, computeConflicts } from './casework.js';
 import { buildLighting } from './lighting.js';
 import { Player } from './controls.js';
 import { initUI, toast } from './ui.js';
@@ -42,6 +42,7 @@ async function boot() {
   buildRooms(scene);
   scene.updateMatrixWorld(true);
   const clamped = clampHinges(wallHit); if (clamped.length) console.info('hinges clamped:', clamped.join(' '));
+  console.info('interlocked pairs:', computeConflicts());
   setLoad(0.9, 'Свет…'); await frame();
   const lighting = buildLighting(scene, renderer);
   lighting.setMode('day');
@@ -66,7 +67,11 @@ async function boot() {
 
   const player = new Player(camera, canvas, arch.doors, (t, isMover) => (isMover ? toggleMover(t) : toggleDoor(t)));
   player.movers = MOVERS;
-  function toggleMover(m) { m.target = m.target < 0.5 ? 1 : 0; }
+  function toggleMover(m) {
+    const open = m.target < 0.5;
+    if (open) for (const c of m.conflicts || []) c.target = 0; // a neighbour that would collide closes first
+    m.target = open ? 1 : 0;
+  }
   player.teleport('entry');
 
   function toggleDoor(door) {
