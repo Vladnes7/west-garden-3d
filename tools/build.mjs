@@ -4,8 +4,9 @@ import { build } from 'esbuild';
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'); // decodes spaces in the path
 const dist = path.join(root, 'dist');
 await mkdir(dist, { recursive: true });
 
@@ -21,7 +22,7 @@ let js = res.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 let fontCss = '';
 try {
-  const cssURL = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600&display=swap';
+  const cssURL = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Roboto+Condensed:wght@300;400;500&family=Roboto:wght@400;500&display=swap';
   const css = await (await fetch(cssURL, { headers: { 'User-Agent': UA } })).text();
   const blocks = css.split('/*').slice(1).map((b) => '/*' + b);
   for (const b of blocks) {
@@ -52,11 +53,11 @@ await writeFile(path.join(dist, 'Квартира-43м2.html'), offline);
 for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) await copyFile(path.join(root, 'public', f), path.join(dist, f));
 await writeFile(path.join(dist, 'manifest.webmanifest'), JSON.stringify({
   name: 'West Garden 43 м²', short_name: 'West Garden', start_url: '/', display: 'fullscreen', orientation: 'any',
-  background_color: '#1b1a18', theme_color: '#1b1a18', lang: 'ru',
+  background_color: '#1e3a28', theme_color: '#1e3a28', lang: 'ru',
   icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }],
 }, null, 2));
 let desk = '(skipped on CI)';
 if (!process.env.VERCEL && !process.env.CI) {
-  try { desk = path.join(homedir(), 'Desktop', 'Квартира-43м2.html'); await writeFile(desk, offline); } catch (e) { desk = 'not written: ' + e.message; }
+  try { desk = path.join(root, '..', 'Квартира-43м2.html'); /* next to the project folder (Desktop/West Garden) */ await writeFile(desk, offline); } catch (e) { desk = 'not written: ' + e.message; }
 }
 console.log('built', (offline.length / 1048576).toFixed(2) + ' MB', 'fonts:', fontCss ? 'embedded' : 'none', '\n ->', desk);

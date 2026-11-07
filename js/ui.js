@@ -124,7 +124,7 @@ export function initUI({ player, lighting, onModeChange }) {
     const ink = css.getPropertyValue('--ink').trim() || '#2a2622';
     for (const r of ROOMS) {
       b.beginPath(); r.poly.forEach(([x, y], i) => { const [cx, cy] = toC(x, y); i ? b.lineTo(cx, cy) : b.moveTo(cx, cy); }); b.closePath();
-      b.fillStyle = { floor_wood: 'rgba(180,155,132,.35)', floor_bath: 'rgba(225,215,205,.5)' }[r.floor]; b.fill();
+      b.fillStyle = { floor_wood: 'rgba(147,173,141,.22)', floor_bath: 'rgba(245,243,238,.2)' }[r.floor]; b.fill();
     }
     b.fillStyle = ink;
     for (const p of WALLS) { b.beginPath(); p.forEach(([x, y], i) => { const [cx, cy] = toC(x, y); i ? b.lineTo(cx, cy) : b.moveTo(cx, cy); }); b.closePath(); b.fill(); }
@@ -179,11 +179,11 @@ export function initUI({ player, lighting, onModeChange }) {
       const [cx, cy] = toC(p.x * 1000, p.z * 1000);
       const a = player.yaw;
       const fx = -Math.sin(a), fz = -Math.cos(a);
-      ctx.fillStyle = 'rgba(158,75,53,.25)';
+      ctx.fillStyle = 'rgba(195,211,190,.3)';
       ctx.beginPath(); ctx.moveTo(cx, cy);
       const ang = Math.atan2(fz, fx);
       ctx.arc(cx, cy, 34, ang - 0.55, ang + 0.55); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#9e4b35'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#93ad8d'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
       const r = ROOMS.find((q) => pointIn(p.x * 1000, p.z * 1000, q.poly));
       if (r && r.name !== lastRoom) { lastRoom = r.name; $('#roomName').textContent = r.name; $('#mapRoom').textContent = r.name; }

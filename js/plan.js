@@ -362,3 +362,16 @@ export function collisionSegments() {
   return segs;
 }
 void mat4; void planarUV;
+
+// true when a world point is inside a wall / lintel / built-in prism, or within `pad` m of its face
+export function wallHit(x, y, z, pad = 0.012) {
+  const X = x / S, Y = z / S, P = pad / S;
+  for (const pr of PRISMS) {
+    if (pr.kind === 'sill') continue;
+    if (y * 1000 < pr.z0 || y * 1000 > pr.z1) continue;
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const [a, b] of pr.poly) { x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b); }
+    if (pr.poly.length === 4 ? (X > x0 - P && X < x1 + P && Y > y0 - P && Y < y1 + P) : pointInPoly(X, Y, pr.poly)) return true;
+  }
+  return false;
+}

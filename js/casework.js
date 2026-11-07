@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { Batch, Frame, mat4 } from './geom.js';
 import { shakerDoor, archPanelDoor, collide } from './pieces.js';
 
-export const MOVERS = [];   // { kind: 'hinge'|'drawer', inner, meshes, inside, open, target, max, sign }
+export const MOVERS = [];
+export const OBST = [];     // world AABBs of carcasses: [x0,y0,z0,x1,y1,z1] — used to stop doors swinging into furniture   // { kind: 'hinge'|'drawer', inner, meshes, inside, open, target, max, sign }
 let ROOT = null;
 export function setRoot(g) { ROOT = g; }
 
@@ -29,7 +30,7 @@ export function hinged(F, w, hinge, draw, { angle = 1.65, back } = {}) {
   const B = new Batch(); const L = new Frame(B, new THREE.Matrix4().makeTranslation(-hx, 0, 0));
   draw(L); if (back) back(L);
   const meshes = B.build(inner, { name: 'leaf' });
-  return register({ kind: 'hinge', inner, meshes, inside: [], open: 0, target: 0, max: angle, sign: hinge === 'L' ? -1 : 1 });
+  return register({ kind: 'hinge', inner, meshes, inside: [], open: 0, target: 0, max: angle, sign: hinge === 'L' ? -1 : 1, w, hx });
 }
 
 // Drawer: front drawn by draw(L) (origin bottom-centre of front plane); box + fill(LI, iw, ih, id) move with it.
@@ -48,6 +49,9 @@ export function drawer(F, w, h, depth, draw, fill, { travel, boxH } = {}) {
 
 // Hollow carcass behind the front plane (z = 0). shelves: [y] or [y, x0, x1]; parts: x of vertical partitions.
 export function carcass(F, w, h, d, mat, { t = 0.018, shelves = [], parts = [], top = true, bottom = true, back = true, shelfMat } = {}) {
+  { const v = new THREE.Vector3(), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const cx of [-w / 2, w / 2]) for (const cy of [0, h]) for (const cz of [-d, 0]) { v.set(cx, cy, cz).applyMatrix4(F.M); v.toArray().forEach((q, i) => { lo[i] = Math.min(lo[i], q); hi[i] = Math.max(hi[i], q); }); }
+    OBST.push([...lo, ...hi]); }
   F.box(t, h, d, -w / 2 + t / 2, 0, -d / 2, mat); F.box(t, h, d, w / 2 - t / 2, 0, -d / 2, mat);
   if (top) F.box(w - 2 * t, t, d, 0, h - t, -d / 2, mat);
   if (bottom) F.box(w - 2 * t, t, d, 0, 0, -d / 2, mat);
@@ -244,4 +248,30 @@ export function washer(F, label = 'washer') {
   F.cylZ(0.022, 0.006, 0.2, 0.77, 0.006, 'chrome', 20);
   F.torus(0.17, 0.02, 0, 0.4, 0.012, 'chrome', 0);
   F.cylZ(0.16, 0.006, 0, 0.4, 0.004, 'appliance', 40); F.cylZ(0.15, 0.004, 0, 0.4, 0.016, 'glass_cup', 40);
+}
+
+// Stop every hinged leaf before it swings into a wall, a mirror on a wall, or another carcass.
+// wallHit(x, y, z) -> true when the point is inside (or within a few cm of) a wall. Call after the scene matrices are final.
+export function clampHinges(wallHit) {
+  const inBox = (b, p, pad = 0) => p.x > b[0] - pad && p.x < b[3] + pad && p.y > b[1] - pad && p.y < b[4] + pad && p.z > b[2] - pad && p.z < b[5] + pad;
+  const R = new THREE.Matrix4(), p = new THREE.Vector3(), log = [];
+  for (const m of MOVERS) {
+    if (m.kind !== 'hinge' || m.w === undefined) continue;
+    const outer = m.inner.parent; outer.updateMatrixWorld(true);
+    const bb = new THREE.Box3(); for (const me of m.meshes) { me.geometry.computeBoundingBox(); bb.union(me.geometry.boundingBox); }
+    const ext = -2 * m.hx, y0 = bb.min.y + 0.03, y1 = bb.max.y - 0.03;
+    const at = (fx, y, z, a) => { R.makeRotationY(m.sign * a); return p.set(ext * fx, y, z).applyMatrix4(R).applyMatrix4(outer.matrixWorld); };
+    const own = OBST.filter((b) => inBox(b, at(0.5, (y0 + y1) / 2, -0.06, 0), 0.01));
+    const others = OBST.filter((b) => !own.includes(b));
+    const samples = [];
+    const ny = Math.max(2, Math.ceil((y1 - y0) / 0.18));
+    for (const fx of [0.35, 0.7, 1]) for (let j = 0; j <= ny; j++) for (const z of [0.005, 0.02]) samples.push([fx, y0 + (y1 - y0) * j / ny, z]);
+    const hit = ([fx, y, z], a) => { const q = at(fx, y, z, a); return wallHit(q.x, q.y, q.z) || others.some((b) => inBox(b, q, 0.004)); };
+    const live = samples.filter((s) => !hit(s, 0.03));
+    let max = m.max;
+    for (let a = 0.06; a <= m.max + 1e-6; a += 0.03) if (live.some((s) => hit(s, a))) { max = Math.max(0.35, a - 0.06); break; }
+    if (max < m.max) log.push(max.toFixed(2));
+    m.max = max;
+  }
+  return log;
 }
