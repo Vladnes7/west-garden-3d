@@ -93,6 +93,49 @@
   #roomBar button small { font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   #roomBar button:hover, #roomBar button:focus-visible { background: var(--paper); color: var(--wg); outline: none; }
   #roomBar button:hover small, #roomBar button:focus-visible small { color: inherit; opacity: .75; }
+  #roomBar button.on { background: var(--paper); color: var(--wg); }
+  #roomBar button.on small { color: inherit; opacity: .75; }
+  /* overview tools: view, wall cut height, labels */
+  #ovw { position: fixed; left: calc(16px + env(safe-area-inset-left, 0px)); top: calc(84px + env(safe-area-inset-top, 0px)); z-index: 5; display: none; flex-direction: column; gap: 10px; padding: 12px 14px; width: 232px; }
+  body:not(.walk) #ovw { display: flex; }
+  #ovw .lbl { font-family: var(--head); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  #ovw .seg { background: var(--chip); }
+  #ovw .seg button { flex: 1; }
+  #ovw .cut { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 10px; }
+  #ovw .cut output { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); }
+  #ovw input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--sage); margin: 0; height: 22px; }
+  #lblBtn { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 0; background: transparent; padding: 0; font-family: var(--head); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  #lblBtn i { width: 30px; height: 18px; border-radius: 999px; background: var(--chip); border: 1px solid var(--line); position: relative; transition: background .15s; }
+  #lblBtn i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink-2); transition: transform .15s, background .15s; }
+  #lblBtn[aria-pressed=true] i { background: var(--sage); border-color: transparent; }
+  #lblBtn[aria-pressed=true] i::after { transform: translateX(12px); background: var(--wg); }
+  #lblBtn:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; border-radius: 4px; }
+  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 4; display: none; }
+  body:not(.walk) #labels:not(.hidden) { display: block; }
+  .rlabel { position: absolute; left: 0; top: 0; pointer-events: auto; border: 0; padding: 5px 10px 5px; border-radius: 999px; background: rgba(245, 243, 238, .94); color: var(--wg); box-shadow: 0 2px 10px rgba(8, 22, 14, .22); display: flex; align-items: baseline; gap: 7px; white-space: nowrap; will-change: transform; }
+  .rlabel b { font-family: var(--head); font-weight: 500; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .rlabel small { font-size: 11px; font-variant-numeric: tabular-nums; opacity: .7; }
+  .rlabel:hover { background: #fff; }
+  .rlabel.cur { display: none; }
+  .rlabel:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+  #roomGo { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(82px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: none; }
+  body:not(.walk) #roomGo:not(.hidden) { display: block; }
+  @media (max-width: 1040px) { #ovw { top: calc(124px + env(safe-area-inset-top, 0px)); } }
+  /* phone: overview tools become one compact row above the room buttons */
+  body.touch #ovw, body.small #ovw { top: auto; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); width: auto; padding: 6px 8px; gap: 10px; flex-direction: row; align-items: center; }
+  body.touch #ovw > .lbl, body.small #ovw > .lbl { display: none; }
+  body.touch #ovw .seg, body.small #ovw .seg { flex: none; }
+  body.touch #ovw .cut, body.small #ovw .cut { flex: 1; min-width: 0; gap: 0 6px; }
+  body.touch #ovw .cut .lbl, body.small #ovw .cut .lbl { font-size: 10px; }
+  body.touch #ovw .cut output, body.small #ovw .cut output { font-size: 12px; }
+  body.touch #ovw input[type=range], body.small #ovw input[type=range] { height: 18px; }
+  body.touch #lblBtn, body.small #lblBtn { font-size: 0; gap: 0; }
+  body.touch #lblBtn::before, body.small #lblBtn::before { content: 'Aa'; font-size: 11px; margin-right: 5px; letter-spacing: 0; }
+  body.touch #roomBar, body.small #roomBar { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  body.touch #roomGo, body.small #roomGo { bottom: calc(124px + env(safe-area-inset-bottom, 0px)); }
+  body.touch .rlabel, body.small .rlabel { padding: 3px 8px; gap: 5px; }
+  body.touch .rlabel b, body.small .rlabel b { font-size: 10px; }
+  body.touch .rlabel small, body.small .rlabel small { font-size: 10px; }
   #roomTip { position: fixed; z-index: 7; padding: 12px 14px; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity .15s, transform .15s; }
   #roomTip.show { opacity: 1; transform: none; }
   #roomTip b { font-family: var(--head); font-size: 19px; font-weight: 300; letter-spacing: .04em; text-transform: uppercase; display: block; }
@@ -185,6 +228,14 @@
 <div id="cross"></div>
 <div id="joy" aria-hidden="true"><i></i></div>
 <div id="lookHint">Свайп здесь — осмотреться</div>
+<div id="labels"></div>
+<section id="ovw" class="glass" aria-label="Обзор">
+  <div class="lbl">Ракурс</div>
+  <div class="seg" id="viewSeg"><button data-v="iso" class="on">Изометрия</button><button data-v="top">Сверху</button></div>
+  <div class="cut"><label class="lbl" for="cutH">Высота стен</label><output id="cutVal" for="cutH">1,4 м</output><input id="cutH" type="range" min="0.9" max="3.1" step="0.05" value="1.4"></div>
+  <button id="lblBtn" aria-pressed="true" aria-label="Подписи комнат">Подписи комнат<i aria-hidden="true"></i></button>
+</section>
+<button id="roomGo" class="btn primary glass hidden">Войти</button>
 <nav id="roomBar" class="glass" aria-label="Комнаты"></nav>
 <div id="roomTip" class="glass" role="tooltip"></div>
 <div id="toast" class="glass"></div>

@@ -1,7 +1,8 @@
 import { CONTROLS, ROOMS_UI, applyOption, TEX } from './materials.js';
 import { ROOMS, UI_ROOM } from './plan.js';
 import { WALLS } from './plan-data.js';
-import { VIEWS } from './controls.js';
+import { VIEWS, HOME } from './controls.js';
+import * as THREE from 'three';
 
 const $ = (s) => document.querySelector(s);
 const KEY = 'wg103-finish-v1';
@@ -9,7 +10,7 @@ let state = {};
 try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ } };
 
-export function initUI({ player, lighting, onModeChange }) {
+export function initUI({ player, lighting, camera, onModeChange, onCut, cutH, FULL }) {
   // restore saved finishes
   for (const c of CONTROLS) if (state[c.id] !== undefined && c.options[state[c.id]]) applyOption(c, state[c.id]);
 
@@ -75,7 +76,7 @@ export function initUI({ player, lighting, onModeChange }) {
   if (touch) { $('#keysDesk').classList.add('hidden'); $('#keysTouch').classList.remove('hidden'); }
   $('#helpBtn').onclick = () => { start.classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock(); };
   $('#enterBtn').onclick = () => { start.classList.add('hidden'); player.setMode('walk'); if (!touch) player.lock(); else if (canFS && !isFS()) toggleFS(); lookHint.style.opacity = '1'; };
-  $('#overviewBtn').onclick = () => { start.classList.add('hidden'); player.setMode('orbit'); };
+  $('#overviewBtn').onclick = () => { start.classList.add('hidden'); player.setMode('orbit'); focusRoom(null, 'top'); };
   $('#gl').addEventListener('click', () => { if (player.mode === 'walk' && !player.locked && !touch && start.classList.contains('hidden') && !panel.classList.contains('open')) player.lock(); });
 
   const qSeg = $('#qSeg');
@@ -145,33 +146,85 @@ export function initUI({ player, lighting, onModeChange }) {
     toast(r.name);
   }
 
-  // ---- room buttons (overview): hover shows details, click goes into the room ----
+  // ---- overview: room buttons, labels on the model, view switch, wall cut height ----
+  // clicking a room flies the camera to a plan view of that room; «Войти» walks into it
   const areaOf = (poly) => { let a = 0; for (let i = 0; i < poly.length; i++) { const [x0, y0] = poly[i], [x1, y1] = poly[(i + 1) % poly.length]; a += x0 * y1 - x1 * y0; } return Math.abs(a) / 2e6; };
   const area = (ids) => ROOMS.filter((r) => ids.includes(r.id)).reduce((s, r) => s + areaOf(r.poly), 0);
-  const roomBar = $('#roomBar'), tip = $('#roomTip');
-  for (const r of ROOM_INFO) {
+  const fmt = (v) => v.toFixed(1).replace('.', ',');
+  const roomBar = $('#roomBar'), tip = $('#roomTip'), labelsEl = $('#labels'), goBtn = $('#roomGo');
+  const total = ROOMS.reduce((s, r) => s + areaOf(r.poly), 0);
+  let focus = null; // ROOM_INFO entry or null = whole apartment
+  const barBtns = [];
+  const mkBar = (r) => {
     const b = document.createElement('button');
-    const m2 = area(r.ids);
-    const m2txt = r.ids.length ? m2.toFixed(1).replace('.', ',') + ' м²' : 'в кухне-гостиной';
-    b.innerHTML = `<span>${r.name}</span><small>${m2txt}</small>`;
-    b.setAttribute('aria-label', `${r.name}. ${r.desc}`);
-    const show = () => {
-      tip.innerHTML = `<b>${r.name}</b><span class="m2">${m2txt}</span><p>${r.desc}</p><p class="opens">${r.opens}</p><i>Нажмите, чтобы войти</i>`;
-      const br = b.getBoundingClientRect(), tw = Math.min(280, innerWidth - 24);
-      tip.style.width = tw + 'px';
-      tip.style.left = Math.max(12, Math.min(innerWidth - tw - 12, br.left + br.width / 2 - tw / 2)) + 'px';
-      tip.style.bottom = (innerHeight - br.top + 10) + 'px';
-      tip.classList.add('show');
-    };
-    const hide = () => tip.classList.remove('show');
-    b.addEventListener('mouseenter', show); b.addEventListener('focus', show);
-    b.addEventListener('mouseleave', hide); b.addEventListener('blur', hide);
-    b.onclick = () => { hide(); player.teleport(r.view); toast(r.name); };
-    roomBar.appendChild(b);
+    const m2txt = r ? (r.ids.length ? fmt(area(r.ids)) + ' м²' : 'в кухне-гостиной') : fmt(total) + ' м²';
+    b.innerHTML = `<span>${r ? r.name : 'Вся квартира'}</span><small>${m2txt}</small>`;
+    b.setAttribute('aria-label', r ? `${r.name}. Вид сверху. ${r.desc}` : 'Вся квартира');
+    if (r) {
+      const show = () => {
+        tip.innerHTML = `<b>${r.name}</b><span class="m2">${m2txt}</span><p>${r.desc}</p><p class="opens">${r.opens}</p><i>Нажмите — вид сверху на комнату</i>`;
+        const br = b.getBoundingClientRect(), tw = Math.min(280, innerWidth - 24);
+        tip.style.width = tw + 'px';
+        tip.style.left = Math.max(12, Math.min(innerWidth - tw - 12, br.left + br.width / 2 - tw / 2)) + 'px';
+        tip.style.bottom = (innerHeight - br.top + 10) + 'px';
+        tip.classList.add('show');
+      };
+      b.addEventListener('mouseenter', show); b.addEventListener('focus', show);
+      b.addEventListener('mouseleave', hideTip); b.addEventListener('blur', hideTip);
+    }
+    b.onclick = () => { hideTip(); focusRoom(r, r ? 'top' : player.view); };
+    b._r = r; barBtns.push(b); roomBar.appendChild(b);
+  };
+  const hideTip = () => tip.classList.remove('show');
+  mkBar(null); for (const r of ROOM_INFO) mkBar(r);
+
+  const viewSeg = $('#viewSeg'), cutIn = $('#cutH'), cutVal = $('#cutVal'), lblBtn = $('#lblBtn');
+  function syncOverview() {
+    for (const b of barBtns) b.classList.toggle('on', b._r === focus);
+    for (const b of viewSeg.children) b.classList.toggle('on', b.dataset.v === player.view);
+    goBtn.classList.toggle('hidden', !focus);
+    if (focus) goBtn.innerHTML = `Войти: ${focus.name} <span aria-hidden="true">→</span>`;
+    for (const l of labels) l.el.classList.toggle('cur', l.r === focus);
   }
+  function focusRoom(r, view) {
+    player.flyTo(r ? r.box : HOME, view); // may switch to overview first (which resets the focus)
+    focus = r;
+    syncOverview();
+  }
+  for (const b of viewSeg.children) b.onclick = () => focusRoom(focus, b.dataset.v);
+  goBtn.onclick = () => { if (focus) { player.teleport(focus.view); toast(focus.name); } };
+  let cut = cutH;
+  const showCut = () => { cutVal.textContent = cut >= FULL - 0.01 ? 'полные' : fmt(cut) + ' м'; };
+  cutIn.value = String(cut); showCut();
+  cutIn.addEventListener('input', () => { cut = +cutIn.value; showCut(); onCut(cut); });
+  let lblOn = true;
+  lblBtn.onclick = () => { lblOn = !lblOn; lblBtn.setAttribute('aria-pressed', String(lblOn)); labelsEl.classList.toggle('hidden', !lblOn); };
+
+  // labels pinned to a free spot of each room's floor
+  const labels = ROOM_INFO.map((r) => {
+    const el = document.createElement('button'); el.className = 'rlabel';
+    el.innerHTML = `<b>${r.name}</b>${r.ids.length ? `<small>${fmt(area(r.ids))} м²</small>` : ''}`;
+    el.onclick = () => focusRoom(r, 'top');
+    labelsEl.appendChild(el);
+    return { r, el, p: new THREE.Vector3(r.label[0], 0.05, r.label[1]) };
+  });
+  const v3 = new THREE.Vector3();
+  function placeLabels() {
+    for (const l of labels) {
+      v3.copy(l.p).project(camera);
+      const x = (v3.x * 0.5 + 0.5) * innerWidth, y = (-v3.y * 0.5 + 0.5) * innerHeight;
+      const off = v3.z > 1 || x < -40 || x > innerWidth + 40 || y < -20 || y > innerHeight + 20;
+      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
+      l.el.style.visibility = off ? 'hidden' : '';
+    }
+  }
+  const prevMode = player.onMode;
+  player.onMode = (m) => { prevMode(m); if (m === 'orbit') { focus = null; syncOverview(); } };
+  player.view = 'iso'; syncOverview();
 
   let currentUIRoom = 'living', lastRoom = '';
   function update() {
+    if (player.mode === 'orbit' && lblOn) placeLabels();
     ctx.clearRect(0, 0, mc.width, mc.height);
     ctx.drawImage(base, 0, 0);
     const p = player.mode === 'walk' ? player.pos : null;
@@ -194,11 +247,11 @@ export function initUI({ player, lighting, onModeChange }) {
 }
 
 const ROOM_INFO = [
-  { view: 'living', ids: ['living'], name: 'Кухня-гостиная', desc: 'ТВ-стена из шпона ореха с подсвеченной нишей, панели с рейкой и перфорированная перегородка, диван-конструктор из букле, круглый стол и стулья Fless.', opens: 'Открываются: кухонные шкафы и ящики, холодильник, колонна с духовкой, шкафы ТВ-стены.' },
-  { view: 'kitchen', ids: [], name: 'Кухня', desc: 'П-образная кухня в нише: тёмный орех и рейка, зелёный мраморный фартук, песочная столешница, мойка Omoikiri.', opens: 'Открываются: все фасады и ящики, холодильник.' },
-  { view: 'bed', ids: ['bed'], name: 'Спальня', desc: 'Парящая кровать Boca Airblade, стена из шпона с рейкой и зеркальными вставками, рабочий стол у окна, стеллаж с оливковым задником.', opens: 'Открываются: шкаф, тумбы, стеллаж, ящики стола.' },
-  { view: 'bath', ids: ['bath'], name: 'Санузел', desc: 'Травертин Pearl Vein, пол и раковина Brown Velvet, рифлёное стекло душа, чёрная сантехника Ritmonio.', opens: 'Открываются: зеркальный шкаф, ящики тумбы, колонна стиральной и сушильной машин, шкаф над инсталляцией, дверь душа.' },
-  { view: 'hall', ids: ['hall'], name: 'Прихожая', desc: 'Декоративная штукатурка, скрытые двери в цвет стен, витрина в чёрной раме, рифлёная панель, консоль с зеркалом.', opens: 'Открываются: шкаф с одеждой, витрина, ящик консоли.' },
+  { view: 'living', ids: ['living'], box: [0, 0, 3.045, 7.37], label: [1.6, 3.2], name: 'Кухня-гостиная', desc: 'ТВ-стена из шпона ореха с подсвеченной нишей, панели с рейкой и перфорированная перегородка, диван-конструктор из букле, круглый стол и стулья Fless.', opens: 'Открываются: кухонные шкафы и ящики, холодильник, колонна с духовкой, шкафы ТВ-стены.' },
+  { view: 'kitchen', ids: [], box: [0, 5.29, 2.35, 7.37], label: [1.2, 6.45], name: 'Кухня', desc: 'П-образная кухня в нише: тёмный орех и рейка, зелёный мраморный фартук, песочная столешница, мойка Omoikiri.', opens: 'Открываются: все фасады и ящики, холодильник.' },
+  { view: 'bed', ids: ['bed'], box: [3.2, 0, 6.165, 4.885], label: [4.1, 3.75], name: 'Спальня', desc: 'Парящая кровать Boca Airblade, стена из шпона с рейкой и зеркальными вставками, рабочий стол у окна, стеллаж с оливковым задником.', opens: 'Открываются: шкаф, тумбы, стеллаж, ящики стола.' },
+  { view: 'bath', ids: ['bath'], box: [4.395, 5.01, 6.125, 7.608], label: [5.3, 5.55], name: 'Санузел', desc: 'Травертин Pearl Vein, пол и раковина Brown Velvet, рифлёное стекло душа, чёрная сантехника Ritmonio.', opens: 'Открываются: зеркальный шкаф, ящики тумбы, колонна стиральной и сушильной машин, шкаф над инсталляцией, дверь душа.' },
+  { view: 'hall', ids: ['hall'], box: [2.51, 4.42, 4.255, 7.64], label: [3.6, 6.4], name: 'Прихожая', desc: 'Декоративная штукатурка, скрытые двери в цвет стен, витрина в чёрной раме, рифлёная панель, консоль с зеркалом.', opens: 'Открываются: шкаф с одеждой, витрина, ящик консоли.' },
 ];
 
 function pointIn(x, y, poly) {

@@ -33,7 +33,7 @@ function spotSurface(W, x, z, y = CEIL) { W.cyl(0.04, 0.04, 0.12, x, y - 0.12, z
 // ------------------------------------------------------------ LIVING (кухня-гостиная, жилая часть)
 function living(B, W) {
   // rug Д-2 2300×1700
-  P.rug(W.sub(1.45, 0, 1.75), 1.7, 2.3, 'rug_cream');
+  P.rug(W.sub(1.02, 0, 1.455), 1.7, 2.3, 'rug_cream'); // sheet 15: under the sofa, the coffee table sits on its east edge
   sofa(W);
   coffeeTable(W.sub(1.98, 0.004, 2.25));
   tvWall(W);
@@ -432,7 +432,7 @@ function bedroom(B, W) {
   P.pillow(bed, 0.75, 0.48, 0.17, -0.42, 0.52, -0.78, 'pillow_white', 0, -0.95);
   P.pillow(bed, 0.75, 0.48, 0.17, 0.42, 0.52, -0.78, 'pillow_white', 0, -0.95);
   P.collide(bed, 1.9, 2.1);
-  P.rug(W.sub(4.75, 0, 2.64), 2.3, 2.8, 'rug_cream');
+  P.rug(W.sub(4.57, 0, 2.6), 2.0, 2.5, 'rug_cream'); // Д-1 2500×2000 (sheet 57), position per sheet 15
   // desk ИМ-14 under the window + drawer unit ИМ-15, tubular radiator Arbonia
   W.box(0.8, 0.65, 0.6, 4.01, 0, 0.47, 'wood_dark');
   CW.drawer(W.sub(4.01, 0.005, 0.77), 0.79, 0.32, 0.5, (L) => flat(L, 0.79, 0.32, 'wood_dark'), (f, iw, ih, id) => CW.drawerFill(f, iw, ih, id, 'clothes', 7), { boxH: 0.2 });
