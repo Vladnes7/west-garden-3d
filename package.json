@@ -2,11 +2,12 @@
   "name": "west-garden-3d",
   "version": "1.0.0",
   "private": true,
-  "description": "Интерактивная 3D-прогулка по квартире 43 м² (West Garden, кв. 103) по рабочим чертежам",
+  "description": "\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f 3D-\u043f\u0440\u043e\u0433\u0443\u043b\u043a\u0430 \u043f\u043e \u043a\u0432\u0430\u0440\u0442\u0438\u0440\u0435 43 \u043c\u00b2 (West Garden, \u043a\u0432. 103) \u043f\u043e \u0440\u0430\u0431\u043e\u0447\u0438\u043c \u0447\u0435\u0440\u0442\u0435\u0436\u0430\u043c",
   "type": "module",
   "scripts": {
     "build": "node tools/build.mjs",
-    "dev": "python3 -m http.server 8794"
+    "dev": "python3 -m http.server 8794",
+    "pages": "sh tools/pages.sh"
   },
   "devDependencies": {
     "esbuild": "0.24.0",

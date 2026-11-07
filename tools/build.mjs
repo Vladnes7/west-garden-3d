@@ -46,15 +46,15 @@ const page = (manifest) => html
   .replace('<script type="module" src="./js/main.js"></script>', () => '<script type="module">\n' + js + '\n</script>');
 
 const offline = page(`<link rel="apple-touch-icon" href="data:image/png;base64,${icon}">\n<link rel="icon" href="data:image/png;base64,${icon}">`);
-const web = page('<link rel="manifest" href="/manifest.webmanifest">\n<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n<link rel="icon" href="/icon-192.png">');
+const web = page('<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="apple-touch-icon.png">\n<link rel="icon" href="icon-192.png">');
 
 await writeFile(path.join(dist, 'index.html'), web);
 await writeFile(path.join(dist, 'Квартира-43м2.html'), offline);
 for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) await copyFile(path.join(root, 'public', f), path.join(dist, f));
 await writeFile(path.join(dist, 'manifest.webmanifest'), JSON.stringify({
-  name: 'West Garden 43 м²', short_name: 'West Garden', start_url: '/', display: 'fullscreen', orientation: 'any',
+  name: 'West Garden 43 м²', short_name: 'West Garden', start_url: '.', display: 'fullscreen', orientation: 'any',
   background_color: '#1e3a28', theme_color: '#1e3a28', lang: 'ru',
-  icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }],
+  icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }],
 }, null, 2));
 let desk = '(skipped on CI)';
 if (!process.env.VERCEL && !process.env.CI) {
